@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart' hide SizedBox;
-import 'package:flutter/material.dart' as material show SizedBox;
+// lib/ui/screens/auth/register_screen.dart
+
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:study_scheduler/services/auth_service.dart';
 import 'package:study_scheduler/ui/screens/home/home_screen.dart';
@@ -7,12 +8,6 @@ import 'package:study_scheduler/ui/widgets/custom_button.dart';
 import 'package:study_scheduler/ui/widgets/custom_textfield.dart';
 import 'package:study_scheduler/constants/app_colors.dart';
 import 'package:study_scheduler/utils/validators.dart';
-
-// Create our own SizedBox to avoid ambiguous imports
-class SizedBox extends material.SizedBox {
-  const SizedBox({Key? key, double? width, double? height})
-      : super(key: key, width: width, height: height);
-}
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -244,9 +239,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 
                 // Register button
                 CustomButton(
-                  label: 'Register',
-                  onPressed: _register,
-                  isLoading: _isLoading, text: '',
+                  text: 'Register',
+                  onPressed: _isLoading ? null : _register,
+                  isLoading: _isLoading,
                 ),
                 const SizedBox(height: 24),
                 

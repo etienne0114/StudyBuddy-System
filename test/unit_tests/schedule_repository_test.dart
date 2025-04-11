@@ -1,30 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:study_scheduler/data/database/database_helper.dart';
+import 'package:study_scheduler/data/models/activity.dart';
 import 'package:study_scheduler/data/models/schedule.dart';
 import 'package:study_scheduler/data/repositories/schedule_repository.dart';
 import 'package:study_scheduler/services/notification_service.dart';
 
-// Mock classes
-class MockDatabaseHelper extends Mock implements DatabaseHelper {}
-class MockNotificationService extends Mock implements NotificationService {}
+// Generate mock classes
+@GenerateMocks([DatabaseHelper, NotificationService])
+import 'schedule_repository_test.mocks.dart';
 
 void main() {
   late ScheduleRepository repository;
   late MockDatabaseHelper mockDatabaseHelper;
+  late MockNotificationService mockNotificationService;
 
   setUp(() {
-    mockDatabaseHelper = MockDatabaseHelper();
-    repository = ScheduleRepository();
-  });
+  mockDatabaseHelper = MockDatabaseHelper();
+  mockNotificationService = MockNotificationService();
+
+  repository = ScheduleRepository(
+    dbHelper: mockDatabaseHelper,
+    notificationService: mockNotificationService,
+  );
+});
+
 
   group('ScheduleRepository', () {
     final testSchedule = Schedule(
       id: 1,
       title: 'Test Schedule',
       description: 'Test Description',
-      color: Colors.blue.value, createdAt: '', updatedAt: '',
+      color: Colors.blue.value,
+      createdAt: DateTime.now().toIso8601String(),
+      updatedAt: DateTime.now().toIso8601String(),
     );
 
     final testSchedules = [
@@ -33,86 +44,65 @@ void main() {
         id: 2,
         title: 'Test Schedule 2',
         description: 'Test Description 2',
-        color: Colors.red.value, createdAt: '', updatedAt: '',
+        color: Colors.red.value,
+        createdAt: DateTime.now().toIso8601String(),
+        updatedAt: DateTime.now().toIso8601String(),
       ),
     ];
 
-    test('getAllSchedules should return list of schedules', () async {
-      // Arrange
-      when(mockDatabaseHelper.getSchedules())
-          .thenAnswer((_) async => testSchedules);
+    final testActivities = <Activity>[];
 
-      // Act
+    test('getAllSchedules should return a list of schedules', () async {
+      when(mockDatabaseHelper.getSchedules()).thenAnswer((_) async => testSchedules);
+
       final result = await repository.getAllSchedules();
 
-      // Assert
       expect(result, equals(testSchedules));
       verify(mockDatabaseHelper.getSchedules()).called(1);
     });
 
     test('getScheduleById should return schedule when found', () async {
-      // Arrange
-      when(mockDatabaseHelper.getSchedule(1))
-          .thenAnswer((_) async => testSchedule);
+      when(mockDatabaseHelper.getSchedule(1)).thenAnswer((_) async => testSchedule);
 
-      // Act
       final result = await repository.getScheduleById(1);
 
-      // Assert
       expect(result, equals(testSchedule));
       verify(mockDatabaseHelper.getSchedule(1)).called(1);
     });
 
     test('getScheduleById should return null when not found', () async {
-      // Arrange
-      when(mockDatabaseHelper.getSchedule(999))
-          .thenAnswer((_) async => null);
+      when(mockDatabaseHelper.getSchedule(999)).thenAnswer((_) async => null);
 
-      // Act
       final result = await repository.getScheduleById(999);
 
-      // Assert
       expect(result, isNull);
       verify(mockDatabaseHelper.getSchedule(999)).called(1);
     });
 
-    test('createSchedule should return ID of created schedule', () async {
-      // Arrange
-      when(mockDatabaseHelper.insertSchedule(testSchedule))
-          .thenAnswer((_) async => 1);
+    test('createSchedule should return the ID of created schedule', () async {
+      when(mockDatabaseHelper.insertSchedule(testSchedule)).thenAnswer((_) async => 1);
 
-      // Act
       final result = await repository.createSchedule(testSchedule);
 
-      // Assert
       expect(result, equals(1));
       verify(mockDatabaseHelper.insertSchedule(testSchedule)).called(1);
     });
 
     test('updateSchedule should return number of rows affected', () async {
-      // Arrange
-      when(mockDatabaseHelper.updateSchedule(testSchedule))
-          .thenAnswer((_) async => 1);
+      when(mockDatabaseHelper.updateSchedule(testSchedule)).thenAnswer((_) async => 1);
 
-      // Act
       final result = await repository.updateSchedule(testSchedule);
 
-      // Assert
       expect(result, equals(1));
       verify(mockDatabaseHelper.updateSchedule(testSchedule)).called(1);
     });
 
     test('deleteSchedule should return true on success', () async {
-      // Arrange
-      when(mockDatabaseHelper.getActivitiesByScheduleId(1))
-          .thenAnswer((_) async => []);
-      when(mockDatabaseHelper.deleteSchedule(1))
-          .thenAnswer((_) async => 1);
+      when(mockDatabaseHelper.getActivitiesByScheduleId(1)).thenAnswer((_) async => testActivities);
+      when(mockDatabaseHelper.deleteSchedule(1)).thenAnswer((_) async => 1);
 
-      // Act
       final result = await repository.deleteSchedule(1);
 
-      // Assert
       expect(result, isTrue);
       verify(mockDatabaseHelper.getActivitiesByScheduleId(1)).called(1);
       verify(mockDatabaseHelper.deleteSchedule(1)).called(1);

@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart' hide SizedBox;
-import 'package:flutter/material.dart' as material show SizedBox;
+// lib/ui/screens/auth/login_screen.dart
+
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:study_scheduler/services/auth_service.dart';
 import 'package:study_scheduler/ui/screens/auth/register_screen.dart';
@@ -8,12 +9,6 @@ import 'package:study_scheduler/ui/widgets/custom_button.dart';
 import 'package:study_scheduler/ui/widgets/custom_textfield.dart';
 import 'package:study_scheduler/constants/app_colors.dart';
 import 'package:study_scheduler/utils/validators.dart';
-
-// Create our own SizedBox to avoid ambiguous imports
-class SizedBox extends material.SizedBox {
-  const SizedBox({Key? key, double? width, double? height})
-      : super(key: key, width: width, height: height);
-}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -199,9 +194,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 // Login button
                 CustomButton(
-                  label: 'Login',
-                  onPressed: _login,
-                  isLoading: _isLoading, text: '',
+                  text: 'Login',
+                  onPressed: _isLoading ? null : _login,
+                  isLoading: _isLoading,
                 ),
                 const SizedBox(height: 16),
                 

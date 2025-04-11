@@ -8,11 +8,10 @@ class AppTheme {
     return ThemeData(
       primarySwatch: AppColors.createMaterialColor(AppColors.primary),
       primaryColor: AppColors.primary,
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.accent,
         surface: Colors.white,
-        background: AppColors.backgroundLight,
         error: AppColors.error,
       ),
       scaffoldBackgroundColor: AppColors.backgroundLight,
@@ -90,31 +89,31 @@ class AppTheme {
         ),
       ),
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-          if (states.contains(MaterialState.disabled)) {
+        thumbColor: WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+          if (states.contains(WidgetState.disabled)) {
             return Colors.grey.withOpacity(.48);
           }
-          if (states.contains(MaterialState.selected)) {
+          if (states.contains(WidgetState.selected)) {
             return AppColors.primary;
           }
           return Colors.grey;
         }),
-        trackColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-          if (states.contains(MaterialState.disabled)) {
+        trackColor: WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+          if (states.contains(WidgetState.disabled)) {
             return Colors.grey.withOpacity(.12);
           }
-          if (states.contains(MaterialState.selected)) {
+          if (states.contains(WidgetState.selected)) {
             return AppColors.primary.withOpacity(.5);
           }
           return Colors.grey.withOpacity(.38);
         }),
       ),
       checkboxTheme: CheckboxThemeData(
-        fillColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-          if (states.contains(MaterialState.disabled)) {
+        fillColor: WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+          if (states.contains(WidgetState.disabled)) {
             return Colors.grey.withOpacity(.48);
           }
-          if (states.contains(MaterialState.selected)) {
+          if (states.contains(WidgetState.selected)) {
             return AppColors.primary;
           }
           return Colors.grey;
@@ -171,11 +170,10 @@ class AppTheme {
       brightness: Brightness.dark,
       primarySwatch: AppColors.createMaterialColor(AppColors.primary),
       primaryColor: AppColors.primary,
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         secondary: AppColors.accent,
-        surface: const Color(0xFF1E1E1E),
-        background: AppColors.backgroundDark,
+        surface: Color(0xFF1E1E1E),
         error: AppColors.error,
       ),
       scaffoldBackgroundColor: AppColors.backgroundDark,

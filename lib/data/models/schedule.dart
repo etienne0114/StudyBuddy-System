@@ -1,10 +1,12 @@
 // lib/data/models/schedule.dart
 
+import 'package:flutter/material.dart';
+
 class Schedule {
-  int? id;
+  final int? id;
   final String title;
   final String? description;
-  final int? color;
+  final int color;
   final int isActive; // 1 = active, 0 = inactive
   final String createdAt;
   final String updatedAt;
@@ -13,28 +15,40 @@ class Schedule {
     this.id,
     required this.title,
     this.description,
-    this.color,
+    required this.color,
     this.isActive = 1,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  // Create a Schedule from a map (database row)
-  factory Schedule.fromMap(Map<String, dynamic> map) {
+  // Get the color as a Color object
+  Color get scheduleColor => Color(color);
+  
+  // Check if schedule is active
+  bool get isActiveFlag => isActive == 1;
+
+  // Create a copy of this Schedule with some fields replaced
+  Schedule copyWith({
+    int? id,
+    String? title,
+    String? description,
+    int? color,
+    bool? isActive,
+    String? createdAt,
+    String? updatedAt,
+  }) {
     return Schedule(
-      id: map['id'] as int?,
-      title: map['title'] as String,
-      description: map['description'] as String?,
-      color: map['color'] as int?,
-      isActive: map['isActive'] as int? ?? 1,
-      createdAt: map['createdAt'] as String,
-      updatedAt: map['updatedAt'] as String,
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      color: color ?? this.color,
+      isActive: isActive != null ? (isActive ? 1 : 0) : this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
-  get scheduleColor => null;
-
-  // Convert Schedule to a map (for database insertion/update)
+  // Convert a Schedule into a Map
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,
@@ -47,29 +61,21 @@ class Schedule {
     };
   }
 
-  // Copy with method for creating a new Schedule with updated fields
-  Schedule copyWith({
-    int? id,
-    String? title,
-    String? description,
-    int? color,
-    int? isActive,
-    String? createdAt,
-    String? updatedAt,
-  }) {
+  // Create a Schedule from a Map
+  factory Schedule.fromMap(Map<String, dynamic> map) {
     return Schedule(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      color: color ?? this.color,
-      isActive: isActive ?? this.isActive,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      id: map['id'],
+      title: map['title'],
+      description: map['description'],
+      color: map['color'],
+      isActive: map['isActive'] ?? 1,
+      createdAt: map['createdAt'],
+      updatedAt: map['updatedAt'],
     );
   }
 
   @override
   String toString() {
-    return 'Schedule{id: $id, title: $title, isActive: $isActive}';
+    return 'Schedule{id: $id, title: $title, color: $color, isActive: $isActive}';
   }
 }

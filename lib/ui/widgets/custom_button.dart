@@ -5,106 +5,102 @@ import 'package:study_scheduler/constants/app_colors.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isLoading;
-  final bool isFullWidth;
-  final IconData? icon;
-  final Color? color;
+  final Color? backgroundColor;
+  final Color? textColor;
   final double? width;
-  final double? height;
-  final EdgeInsetsGeometry? padding;
-  final TextStyle? textStyle;
-  final BorderRadius? borderRadius;
+  final double height;
+  final double borderRadius;
+  final EdgeInsets padding;
+  final IconData? icon;
 
   const CustomButton({
     Key? key,
     required this.text,
-    required this.onPressed,
+    this.onPressed,
     this.isLoading = false,
-    this.isFullWidth = true,
-    this.icon,
-    this.color,
+    this.backgroundColor,
+    this.textColor,
     this.width,
-    this.height,
-    this.padding,
-    this.textStyle,
-    this.borderRadius, required String label,
+    this.height = 48.0,
+    this.borderRadius = 8.0,
+    this.padding = const EdgeInsets.symmetric(horizontal: 24.0),
+    this.icon,
   }) : super(key: key);
+
+  // Constructor with label for backward compatibility
+  CustomButton.withLabel({
+    Key? key,
+    required String label,
+    VoidCallback? onPressed,
+    bool isLoading = false,
+    Color? backgroundColor,
+    Color? textColor,
+    double? width,
+    double height = 48.0,
+    double borderRadius = 8.0,
+    EdgeInsets padding = const EdgeInsets.symmetric(horizontal: 24.0),
+    IconData? icon,
+  }) : this(
+          key: key,
+          text: label,
+          onPressed: onPressed,
+          isLoading: isLoading,
+          backgroundColor: backgroundColor,
+          textColor: textColor,
+          width: width,
+          height: height,
+          borderRadius: borderRadius,
+          padding: padding,
+          icon: icon,
+        );
 
   @override
   Widget build(BuildContext context) {
-    final buttonColor = color ?? AppColors.primary;
-    final buttonTextStyle = textStyle ?? 
-        const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        );
-    final buttonBorderRadius = borderRadius ?? BorderRadius.circular(8);
-    
-    // Button content
-    Widget buttonContent = Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (isLoading)
-          Container(
-            width: 20,
-            height: 20,
-            margin: const EdgeInsets.only(right: 12),
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                buttonTextStyle.color ?? Colors.white,
-              ),
-            ),
-          )
-        else if (icon != null)
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Icon(
-              icon,
-              color: buttonTextStyle.color,
-              size: 20,
-            ),
+    return SizedBox(
+      width: width,
+      height: height,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor ?? AppColors.primary,
+          foregroundColor: textColor ?? Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadius),
           ),
-        Text(
-          text,
-          style: buttonTextStyle,
-          textAlign: TextAlign.center,
+          padding: padding,
+          elevation: 2,
+          disabledBackgroundColor: backgroundColor != null
+              ? backgroundColor!.withOpacity(0.7)
+              : AppColors.primary.withOpacity(0.7),
         ),
-      ],
-    );
-    
-    // Button with appropriate size constraints
-    Widget sizedButton = ElevatedButton(
-      onPressed: isLoading ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: buttonColor,
-        padding: padding ?? const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: buttonBorderRadius,
-        ),
-        disabledBackgroundColor: buttonColor.withOpacity(0.6),
+        child: isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 20),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    text,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
       ),
-      child: buttonContent,
     );
-    
-    // Apply width constraints if requested
-    if (isFullWidth) {
-      return SizedBox(
-        width: double.infinity,
-        height: height,
-        child: sizedButton,
-      );
-    } else if (width != null || height != null) {
-      return SizedBox(
-        width: width,
-        height: height,
-        child: sizedButton,
-      );
-    } else {
-      return sizedButton;
-    }
   }
 }

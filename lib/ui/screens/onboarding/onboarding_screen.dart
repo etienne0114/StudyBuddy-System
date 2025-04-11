@@ -1,8 +1,10 @@
+// lib/ui/screens/onboarding/onboarding_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:study_scheduler/constants/app_colors.dart';
 import 'package:study_scheduler/constants/app_constants.dart';
-import 'package:study_scheduler/ui/screens/home/home_screen.dart' hide SizedBox;
+import 'package:study_scheduler/ui/screens/home/home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({Key? key}) : super(key: key);
@@ -14,26 +16,27 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _numPages = 3;
-
+  
   final List<OnboardingPage> _pages = [
     OnboardingPage(
       title: 'Welcome to Study Scheduler',
-      description: 'Organize your study time, keep track of your activities, and never miss a class again.',
-      image: 'assets/images/onboarding_1.png',
-      backgroundColor: AppColors.primary.withAlpha(0.1 as int),
+      description: 'A simple way to organize your study time and improve your productivity.',
+      imagePath: Icons.calendar_today,
     ),
     OnboardingPage(
-      title: 'Create Your Schedule',
-      description: 'Create custom schedules for different subjects or courses. Add activities with reminders.',
-      image: 'assets/images/onboarding_2.png',
-      backgroundColor: AppColors.success.withAlpha(0.1 as int),
+      title: 'Create Study Schedules',
+      description: 'Organize your courses, assignments, and study sessions in one place.',
+      imagePath: Icons.schedule,
+    ),
+    OnboardingPage(
+      title: 'Track Your Progress',
+      description: 'Monitor your study habits and see your improvement over time.',
+      imagePath: Icons.trending_up,
     ),
     OnboardingPage(
       title: 'Access Study Materials',
-      description: 'Find and access study materials right from the app. Prepare for your classes better.',
-      image: 'assets/images/onboarding_3.png',
-      backgroundColor: AppColors.info.withAlpha(0.1 as int),
+      description: 'Keep all your study materials organized and easily accessible.',
+      imagePath: Icons.book,
     ),
   ];
 
@@ -43,200 +46,156 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  void _onPageChanged(int page) {
-    setState(() {
-      _currentPage = page;
-    });
-  }
-
-  void _nextPage() {
-    if (_currentPage < _numPages - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      _completeOnboarding();
-    }
-  }
-
   Future<void> _completeOnboarding() async {
-    // Mark onboarding as completed
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppConstants.prefFirstLaunch, false);
     
-    // Navigate to home screen
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    }
+    if (!mounted) return;
+    
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Page View
-          PageView.builder(
-            controller: _pageController,
-            onPageChanged: _onPageChanged,
-            itemCount: _numPages,
-            itemBuilder: (context, index) {
-              final page = _pages[index];
-              return _buildPage(page);
-            },
-          ),
-          
-          // Skip button
-          Positioned(
-            top: 50,
-            right: 20,
-            child: TextButton(
-              onPressed: _completeOnboarding,
-              child: const Text('Skip'),
-            ),
-          ),
-          
-          // Bottom controls
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Page indicator
-                  Row(
-                    children: List.generate(_numPages, (index) {
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _currentPage == index
-                              ? AppColors.primary
-                              : Colors.grey.withAlpha(0.5 as int),
-                        ),
-                      );
-                    }),
-                  ),
-                  
-                  // Next/Get Started button
-                  ElevatedButton(
-                    onPressed: _nextPage,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    child: Text(
-                      _currentPage == _numPages - 1 ? 'Get Started' : 'Next',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Skip button at the top
+            Align(
+              alignment: Alignment.topRight,
+              child: TextButton(
+                onPressed: _completeOnboarding,
+                child: const Text('Skip'),
               ),
             ),
-          ),
-        ],
+            
+            // Page content
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                onPageChanged: (int page) {
+                  setState(() {
+                    _currentPage = page;
+                  });
+                },
+                itemCount: _pages.length,
+                itemBuilder: (context, index) {
+                  return _buildPage(_pages[index]);
+                },
+              ),
+            ),
+            
+            // Page indicator
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                _pages.length,
+                (index) => _buildDotIndicator(index == _currentPage),
+              ),
+            ),
+            
+            // Next/Get Started button
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_currentPage < _pages.length - 1) {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    } else {
+                      _completeOnboarding();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    _currentPage < _pages.length - 1 ? 'Next' : 'Get Started',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildPage(OnboardingPage page) {
-    return Container(
-      color: page.backgroundColor,
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Spacer(),
-          // Placeholder for image
-          Container(
-            width: 300,
-            height: 300,
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(0.7 as int),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: page.image != null
-                ? Image.asset(
-                    page.image!,
-                    fit: BoxFit.contain,
-                  )
-                : Center(
-                    child: Icon(
-                      _getIconForPage(_currentPage),
-                      size: 120,
-                      color: AppColors.primary,
-                    ),
-                  ),
+          // Image/Icon
+          Icon(
+            page.imagePath,
+            size: 150,
+            color: AppColors.primary,
           ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                Text(
-                  page.title,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  page.description,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+          const SizedBox(height: 48),
+          
+          // Title
+          Text(
+            page.title,
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
             ),
+            textAlign: TextAlign.center,
           ),
-          const Spacer(),
+          const SizedBox(height: 16),
+          
+          // Description
+          Text(
+            page.description,
+            style: const TextStyle(
+              fontSize: 18,
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
   }
 
-  IconData _getIconForPage(int page) {
-    switch (page) {
-      case 0:
-        return Icons.schedule;
-      case 1:
-        return Icons.calendar_today;
-      case 2:
-        return Icons.library_books;
-      default:
-        return Icons.info;
-    }
+  Widget _buildDotIndicator(bool isActive) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      width: isActive ? 12 : 8,
+      height: isActive ? 12 : 8,
+      decoration: BoxDecoration(
+        color: isActive ? AppColors.primary : Colors.grey.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(6),
+      ),
+    );
   }
 }
 
 class OnboardingPage {
   final String title;
   final String description;
-  final String? image;
-  final Color backgroundColor;
+  final IconData imagePath;
 
   OnboardingPage({
     required this.title,
     required this.description,
-    this.image,
-    this.backgroundColor = Colors.white,
+    required this.imagePath,
   });
 }

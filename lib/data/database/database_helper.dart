@@ -1,3 +1,5 @@
+// lib/data/database/database_helper.dart
+
 import 'dart:async';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -22,7 +24,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'study_scheduler.db');
     return await openDatabase(
       path,
-      version: 2, // Increased version number for migration
+      version: 3, // Increased version number for new features
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -76,11 +78,24 @@ class DatabaseHelper {
         updatedAt TEXT NOT NULL
       )
     ''');
+    
+    // Create AI usage tracking table
+    await db.execute('''
+      CREATE TABLE ai_usage_tracking(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        materialId INTEGER,
+        aiService TEXT NOT NULL,
+        queryText TEXT,
+        usageDate TEXT NOT NULL,
+        FOREIGN KEY (materialId) REFERENCES study_materials (id) ON DELETE CASCADE
+      )
+    ''');
 
     // Create indexes for faster queries
     await db.execute('CREATE INDEX idx_activities_scheduleId ON activities(scheduleId)');
     await db.execute('CREATE INDEX idx_activities_dayOfWeek ON activities(dayOfWeek)');
     await db.execute('CREATE INDEX idx_study_materials_category ON study_materials(category)');
+    await db.execute('CREATE INDEX idx_ai_usage_materialId ON ai_usage_tracking(materialId)');
   }
 
   // Handle database upgrades
@@ -102,6 +117,21 @@ class DatabaseHelper {
         )
       ''');
       await db.execute('CREATE INDEX idx_study_materials_category ON study_materials(category)');
+    }
+    
+    if (oldVersion < 3) {
+      // Add AI usage tracking table for upgrading from version 2 to 3
+      await db.execute('''
+        CREATE TABLE ai_usage_tracking(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          materialId INTEGER,
+          aiService TEXT NOT NULL,
+          queryText TEXT,
+          usageDate TEXT NOT NULL,
+          FOREIGN KEY (materialId) REFERENCES study_materials (id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute('CREATE INDEX idx_ai_usage_materialId ON ai_usage_tracking(materialId)');
     }
   }
 
@@ -297,5 +327,60 @@ class DatabaseHelper {
       whereArgs: ['%$query%', '%$query%'],
     );
     return List.generate(maps.length, (i) => StudyMaterial.fromMap(maps[i]));
+  }
+  
+  // AI Usage Tracking operations
+  Future<int> trackAIUsage(int? materialId, String aiService, String? queryText) async {
+    final Database db = await database;
+    final now = DateTime.now().toIso8601String();
+    
+    return await db.insert('ai_usage_tracking', {
+      'materialId': materialId,
+      'aiService': aiService,
+      'queryText': queryText,
+      'usageDate': now,
+    });
+  }
+  
+  Future<List<Map<String, dynamic>>> getMostUsedAIServices() async {
+    final Database db = await database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT aiService, COUNT(*) as count
+      FROM ai_usage_tracking
+      GROUP BY aiService
+      ORDER BY count DESC
+    ''');
+    
+    return maps;
+  }
+  
+  Future<List<StudyMaterial>> getMostAccessedMaterials() async {
+    final Database db = await database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT m.*, COUNT(t.id) as accessCount
+      FROM study_materials m
+      LEFT JOIN ai_usage_tracking t ON m.id = t.materialId
+      GROUP BY m.id
+      ORDER BY accessCount DESC
+      LIMIT 10
+    ''');
+    
+    return List.generate(maps.length, (i) => StudyMaterial.fromMap(maps[i]));
+  }
+  
+  // Get AI service suggestions based on material category
+  Future<List<String>> getRecommendedAIServicesForCategory(String category) async {
+    final Database db = await database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT t.aiService, COUNT(*) as count
+      FROM ai_usage_tracking t
+      JOIN study_materials m ON t.materialId = m.id
+      WHERE m.category = ?
+      GROUP BY t.aiService
+      ORDER BY count DESC
+      LIMIT 3
+    ''', [category]);
+    
+    return maps.map((map) => map['aiService'] as String).toList();
   }
 }

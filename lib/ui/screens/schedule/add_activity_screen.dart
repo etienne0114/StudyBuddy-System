@@ -1,12 +1,12 @@
 // lib/ui/screens/schedule/add_activity_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:study_scheduler/data/models/activity.dart';
 import 'package:study_scheduler/data/models/schedule.dart';
-import 'package:study_scheduler/data/database/database_helper.dart';
+import 'package:study_scheduler/data/repositories/schedule_repository.dart';
 import 'package:study_scheduler/ui/widgets/custom_button.dart';
 import 'package:study_scheduler/ui/widgets/custom_textfield.dart';
-import 'package:study_scheduler/utils/date_utils.dart' as date_utils;
 
 class AddActivityScreen extends StatefulWidget {
   final Schedule schedule;
@@ -33,7 +33,6 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
   int _notifyBefore = 30; // Default 30 minutes
   bool _isRecurring = true;
   
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   bool _isLoading = false;
 
   @override
@@ -46,7 +45,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
       hour: _startTime.hour + 1,
       minute: _startTime.minute,
     );
-    _selectedDay = date_utils.getCurrentDayIndex();
+    _selectedDay = DateTime.now().weekday; // 1-7 for Monday-Sunday
     
     // If editing existing activity, populate the form
     if (widget.activity != null) {
@@ -54,10 +53,10 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
       _descriptionController.text = widget.activity!.description ?? '';
       _locationController.text = widget.activity!.location ?? '';
       _selectedDay = widget.activity!.dayOfWeek;
-      _startTime = date_utils.stringToTimeOfDay(widget.activity!.startTime);
-      _endTime = date_utils.stringToTimeOfDay(widget.activity!.endTime);
+      _startTime = _stringToTimeOfDay(widget.activity!.startTime);
+      _endTime = _stringToTimeOfDay(widget.activity!.endTime);
       _notifyBefore = widget.activity!.notifyBefore;
-      _isRecurring = widget.activity!.isRecurring == 1;
+      _isRecurring = widget.activity!.isRecurringFlag;
     }
   }
 
@@ -67,6 +66,18 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
     _descriptionController.dispose();
     _locationController.dispose();
     super.dispose();
+  }
+
+  TimeOfDay _stringToTimeOfDay(String timeString) {
+    final parts = timeString.split(':');
+    return TimeOfDay(
+      hour: int.parse(parts[0]),
+      minute: int.parse(parts[1]),
+    );
+  }
+
+  String _timeOfDayToString(TimeOfDay time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   Future<void> _selectTime(BuildContext context, bool isStartTime) async {
@@ -104,21 +115,23 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
         id: widget.activity?.id,
         scheduleId: widget.schedule.id!,
         title: _titleController.text,
-        description: _descriptionController.text,
-        location: _locationController.text,
+        description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
+        location: _locationController.text.isEmpty ? null : _locationController.text,
         dayOfWeek: _selectedDay,
-        startTime: date_utils.timeOfDayToString(_startTime),
-        endTime: date_utils.timeOfDayToString(_endTime),
+        startTime: _timeOfDayToString(_startTime),
+        endTime: _timeOfDayToString(_endTime),
         notifyBefore: _notifyBefore,
         isRecurring: _isRecurring ? 1 : 0,
         createdAt: widget.activity?.createdAt ?? DateTime.now().toIso8601String(),
         updatedAt: DateTime.now().toIso8601String(),
       );
 
+      final repository = Provider.of<ScheduleRepository>(context, listen: false);
+      
       if (widget.activity == null) {
-        await _dbHelper.insertActivity(activity);
+        await repository.createActivity(activity);
       } else {
-        await _dbHelper.updateActivity(activity);
+        await repository.updateActivity(activity);
       }
 
       if (mounted) {
@@ -276,7 +289,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
                     const SizedBox(height: 32),
                     CustomButton(
                       text: widget.activity == null ? 'Add Activity' : 'Save Changes',
-                      onPressed: _saveActivity, label: '',
+                      onPressed: _saveActivity,
                     ),
                   ],
                 ),
@@ -290,10 +303,12 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: List.generate(7, (index) {
+        // Convert to 1-based index for dayOfWeek (1 = Monday, 7 = Sunday)
+        final dayIndex = index + 1;
         return InkWell(
           onTap: () {
             setState(() {
-              _selectedDay = index;
+              _selectedDay = dayIndex;
             });
           },
           child: Container(
@@ -301,7 +316,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
             height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _selectedDay == index 
+              color: _selectedDay == dayIndex 
                   ? Theme.of(context).primaryColor 
                   : Colors.transparent,
               border: Border.all(
@@ -312,7 +327,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
               child: Text(
                 days[index],
                 style: TextStyle(
-                  color: _selectedDay == index 
+                  color: _selectedDay == dayIndex 
                       ? Colors.white 
                       : Theme.of(context).primaryColor,
                   fontWeight: FontWeight.bold,

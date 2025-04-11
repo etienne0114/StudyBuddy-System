@@ -1,14 +1,10 @@
-import 'package:flutter/material.dart' hide SizedBox;
-import 'package:flutter/material.dart' as material show SizedBox;
+// lib/ui/screens/profile/profile_screen.dart
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:study_scheduler/constants/app_colors.dart';
 import 'package:study_scheduler/services/auth_service.dart';
 import 'package:study_scheduler/ui/screens/auth/login_screen.dart';
-
-// Custom SizedBox to avoid ambiguous imports
-class SizedBox extends material.SizedBox {
-  const SizedBox({Key? key, double? width, double? height, Widget? child})
-      : super(key: key, width: width, height: height, child: child);
-}
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -18,115 +14,93 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final AuthService _authService = AuthService();
   bool _isDarkMode = false;
-  bool _notificationsEnabled = true;
-  bool _isLoading = false;
-
+  bool _pushNotificationsEnabled = true;
+  bool _emailNotificationsEnabled = false;
+  String _selectedLanguage = 'English';
+  
   @override
   Widget build(BuildContext context) {
-    final isLoggedIn = _authService.isAuthenticated;
-    final userData = _authService.userData;
+    final authService = Provider.of<AuthService>(context);
+    final userData = authService.userData;
+    
+    final userName = userData?['name'] ?? 'Guest User';
+    final userEmail = userData?['email'] ?? 'guest@example.com';
     
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User profile section
+            // User info card
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
                   children: [
-                    // User avatar
+                    // Profile image
                     CircleAvatar(
-                      radius: 50,
-                      backgroundColor: AppColors.primary.withAlpha(0.2 as int),
+                      radius: 40,
+                      backgroundColor: AppColors.primary.withOpacity(0.2),
                       child: Text(
-                        isLoggedIn && userData != null && userData['name'] != null
-                            ? userData['name'].substring(0, 1).toUpperCase()
-                            : 'G',
+                        userName.substring(0, 1).toUpperCase(),
                         style: const TextStyle(
-                          fontSize: 32,
+                          fontSize: 36,
                           fontWeight: FontWeight.bold,
                           color: AppColors.primary,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(width: 16),
                     
-                    // User name
-                    Text(
-                      isLoggedIn && userData != null && userData['name'] != null
-                          ? userData['name']
-                          : 'Guest User',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    
-                    // User email
-                    Text(
-                      isLoggedIn && userData != null && userData['email'] != null
-                          ? userData['email']
-                          : 'Not logged in',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Edit profile button
-                    if (isLoggedIn)
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          // Navigate to edit profile screen
-                        },
-                        icon: const Icon(Icons.edit),
-                        label: const Text('Edit Profile'),
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: AppColors.primary,
-                        ),
-                      )
-                    else
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginScreen(),
+                    // User details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            userName,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
-                          );
-                        },
-                        icon: const Icon(Icons.login),
-                        label: const Text('Sign In'),
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: AppColors.primary,
-                        ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            userEmail,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton(
+                            onPressed: _editProfile,
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppColors.primary),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text('Edit Profile'),
+                          ),
+                        ],
                       ),
+                    ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 24),
             
-            // App settings
+            // Settings section
             const Text(
-              'App Settings',
+              'Settings',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -134,71 +108,99 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 12),
             
-            // Settings list
+            // Theme settings
             Card(
-              elevation: 2,
+              elevation: 1,
+              margin: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
-                  // Dark mode
                   SwitchListTile(
                     title: const Text('Dark Mode'),
-                    subtitle: const Text('Switch to dark theme'),
-                    secondary: const Icon(Icons.dark_mode),
+                    subtitle: const Text('Use dark theme'),
                     value: _isDarkMode,
                     onChanged: (value) {
                       setState(() {
                         _isDarkMode = value;
-                        // Apply theme change
                       });
+                      _showSettingsSavedMessage('Theme will be updated when you restart the app');
                     },
+                    secondary: const Icon(Icons.brightness_4),
                   ),
-                  const Divider(),
-                  
-                  // Notifications
-                  SwitchListTile(
-                    title: const Text('Notifications'),
-                    subtitle: const Text('Enable activity reminders'),
-                    secondary: const Icon(Icons.notifications),
-                    value: _notificationsEnabled,
-                    onChanged: (value) {
-                      setState(() {
-                        _notificationsEnabled = value;
-                        // Toggle notifications
-                      });
-                    },
-                  ),
-                  const Divider(),
-                  
-                  // Language selector
+                  const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.language),
                     title: const Text('Language'),
-                    subtitle: const Text('English'),
+                    subtitle: Text(_selectedLanguage),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      // Show language picker
-                    },
+                    onTap: _showLanguageSelector,
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
             
-            // App Info
+            // Notification settings
             const Text(
-              'App Information',
+              'Notifications',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 12),
-            
             Card(
-              elevation: 2,
+              elevation: 1,
+              margin: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Push Notifications'),
+                    subtitle: const Text('Receive app notifications'),
+                    value: _pushNotificationsEnabled,
+                    onChanged: (value) {
+                      setState(() {
+                        _pushNotificationsEnabled = value;
+                      });
+                      _showSettingsSavedMessage('Push notification settings updated');
+                    },
+                    secondary: const Icon(Icons.notifications),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: const Text('Email Notifications'),
+                    subtitle: const Text('Receive email reminders'),
+                    value: _emailNotificationsEnabled,
+                    onChanged: (value) {
+                      setState(() {
+                        _emailNotificationsEnabled = value;
+                      });
+                      _showSettingsSavedMessage('Email notification settings updated');
+                    },
+                    secondary: const Icon(Icons.email),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // App info section
+            const Text(
+              'App',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              elevation: 1,
+              margin: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -208,28 +210,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     leading: const Icon(Icons.info_outline),
                     title: const Text('About'),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      _showAboutDialog();
-                    },
+                    onTap: _showAboutDialog,
                   ),
-                  const Divider(),
-                  
+                  const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.help_outline),
                     title: const Text('Help & Support'),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () {
-                      // Navigate to help screen
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Help & Support coming soon')),
+                      );
                     },
                   ),
-                  const Divider(),
-                  
+                  const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.privacy_tip_outlined),
-                    title: const Text('Privacy Policy'),
+                    leading: const Icon(Icons.star_outline),
+                    title: const Text('Rate the App'),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () {
-                      // Show privacy policy
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Rate the App feature coming soon')),
+                      );
                     },
                   ),
                 ],
@@ -237,128 +239,226 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 24),
             
-            // Sign out button
-            if (isLoggedIn)
-              _CustomButton(
-                label: 'Sign Out',
-                icon: Icons.logout,
-                onPressed: _signOut,
-                isLoading: _isLoading,
-                color: Colors.red,
+            // Account actions
+            const Text(
+              'Account',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              elevation: 1,
+              margin: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.privacy_tip_outlined),
+                    title: const Text('Privacy Policy'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Privacy Policy coming soon')),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.logout, color: Colors.red),
+                    title: const Text(
+                      'Sign Out',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                    onTap: _handleLogout,
+                  ),
+                ],
+              ),
+            ),
             
+            // App version
+            const SizedBox(height: 32),
+            Center(
+              child: Text(
+                'Version 1.0.0',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
-
-  Future<void> _signOut() async {
-    setState(() {
-      _isLoading = true;
-    });
+  
+  void _editProfile() {
+    // Show dialog to edit profile
+    final nameController = TextEditingController(
+      text: Provider.of<AuthService>(context, listen: false).userData?['name'] ?? '',
+    );
     
-    try {
-      await _authService.signOut();
-      
-      if (!mounted) return;
-      
-      // Navigate back to login screen
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      );
-    } catch (e) {
-      if (!mounted) return;
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error signing out: ${e.toString()}')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  void _showAboutDialog() {
     showDialog(
       context: context,
-      builder: (context) => AboutDialog(
-        applicationName: 'Study Scheduler',
-        applicationVersion: 'v1.0.0',
-        applicationIcon: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withAlpha(0.2 as int),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.calendar_today,
-            color: AppColors.primary,
-            size: 24,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Profile'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
           ),
         ),
-        children: const [
-          SizedBox(height: 16),
-          Text(
-            'Study Scheduler is a comprehensive app designed to help students and teachers organize their study schedules with timely reminders and access to study materials.',
-            style: TextStyle(fontSize: 14),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-          SizedBox(height: 16),
-          Text(
-            '© 2025 Study Scheduler Team. All rights reserved.',
-            style: TextStyle(fontSize: 12),
+          ElevatedButton(
+            onPressed: () async {
+              // Update profile
+              if (nameController.text.isNotEmpty) {
+                try {
+                  final authService = Provider.of<AuthService>(context, listen: false);
+                  await authService.updateProfile({
+                    'name': nameController.text.trim(),
+                  });
+                  
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Profile updated successfully')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to update profile: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Save'),
           ),
         ],
       ),
     );
   }
-}
-
-class _CustomButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onPressed;
-  final bool isLoading;
-  final Color? color;
-  final IconData? icon;
-
-  const _CustomButton({
-    Key? key,
-    required this.label,
-    required this.onPressed,
-    this.isLoading = false,
-    this.color,
-    this.icon,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: isLoading ? null : onPressed,
-        icon: isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Icon(icon ?? Icons.check),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          padding: const EdgeInsets.symmetric(vertical: 12),
+  
+  void _showLanguageSelector() {
+    final languages = ['English', 'Spanish', 'French', 'German', 'Chinese', 'Japanese'];
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Language'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: languages.length,
+            itemBuilder: (context, index) {
+              final language = languages[index];
+              final isSelected = language == _selectedLanguage;
+              
+              return ListTile(
+                title: Text(language),
+                trailing: isSelected
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  setState(() {
+                    _selectedLanguage = language;
+                  });
+                  Navigator.pop(context);
+                  _showSettingsSavedMessage('Language updated to $_selectedLanguage');
+                },
+              );
+            },
+          ),
         ),
       ),
+    );
+  }
+  
+  void _showAboutDialog() {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Study Scheduler',
+      applicationVersion: '1.0.0',
+      applicationIcon: const Icon(
+        Icons.calendar_today,
+        size: 50,
+        color: AppColors.primary,
+      ),
+      applicationLegalese: '© 2023 Study Scheduler Inc. All rights reserved.',
+      children: [
+        const SizedBox(height: 16),
+        const Text(
+          'Study Scheduler is a comprehensive app designed to help students '
+          'organize their study time efficiently and improve productivity. '
+          'Create schedules, track progress, and access study materials all in one place.',
+        ),
+      ],
+    );
+  }
+  
+  void _handleLogout() async {
+    // Show confirmation dialog
+    final confirmLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmLogout == true) {
+      try {
+        final authService = Provider.of<AuthService>(context, listen: false);
+        await authService.signOut();
+        
+        if (!mounted) return;
+        
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to sign out: $e')),
+        );
+      }
+    }
+  }
+  
+  void _showSettingsSavedMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 }

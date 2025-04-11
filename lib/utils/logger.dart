@@ -1,7 +1,6 @@
 // lib/utils/logger.dart
 
-/// A simple logging utility to replace print statements
-/// This can be expanded to use a more robust logging package in the future
+
 class Logger {
   // Log levels
   static const int VERBOSE = 0;

@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:study_scheduler/constants/app_colors.dart';
 import 'package:study_scheduler/constants/app_constants.dart';
 import 'package:study_scheduler/services/notification_service.dart';
-import 'package:study_scheduler/ui/screens/home/home_screen.dart' hide SizedBox;
+import 'package:study_scheduler/ui/screens/home/home_screen.dart';
 import 'package:study_scheduler/ui/screens/onboarding/onboarding_screen.dart';
 import 'package:study_scheduler/utils/logger.dart';
 
@@ -60,9 +60,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   Future<void> _initializeApp() async {
     try {
-      // Store context for later use
-      final BuildContext currentContext = context;
-      
       // Initialize notification service
       final notificationService = NotificationService();
       await notificationService.init();
@@ -74,23 +71,28 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       // Navigate to appropriate screen after delay
       await Future.delayed(const Duration(milliseconds: 2000));
       
-      // Check if widget is still mounted
+      // Check if widget is still mounted before navigating
       if (!mounted) return;
       
+      // Navigate to appropriate screen
       if (isFirstLaunch) {
-        Navigator.pushReplacement(
-          currentContext,
+        Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const OnboardingScreen()),
         );
       } else {
-        Navigator.pushReplacement(
-          currentContext,
+        Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       }
     } catch (e) {
       Logger.error('Error initializing app: $e');
-      // Handle error case
+      
+      // Handle error case - still navigate to home screen
+      if (!mounted) return;
+      
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
     }
   }
 
@@ -158,7 +160,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       width: 40,
                       height: 40,
                       child: CircularProgressIndicator(
-                        strokeWidth: 3,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                       ),
                     ),
                   ],
