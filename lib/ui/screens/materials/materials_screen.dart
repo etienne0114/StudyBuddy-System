@@ -1,10 +1,11 @@
 // lib/ui/screens/materials/materials_screen.dart
+// Screen to display and manage study materials with AI integration
 
 import 'package:flutter/material.dart';
 import 'package:study_scheduler/data/models/study_material.dart';
 import 'package:study_scheduler/data/repositories/study_materials_repository.dart';
+import 'package:study_scheduler/helpers/ai_helper.dart';
 import 'package:study_scheduler/ui/screens/materials/material_detail_screen.dart';
-import 'package:study_scheduler/ui/screens/materials/ai_assistant_dialog.dart';
 import 'package:study_scheduler/ui/screens/materials/add_material_screen.dart';
 
 class MaterialsScreen extends StatefulWidget {
@@ -71,24 +72,13 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
     });
   }
 
-  void _showAIAssistant(BuildContext context, StudyMaterial? material) {
-    // Simplified connectivity check
-    // In a real app, we would use the ConnectivityService through Provider
-// Assume we're connected for demo
-    
-    
-    showDialog(
-      context: context,
-      builder: (context) => AIAssistantDialog(material: material),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Study Materials'),
         actions: [
+          AIHelper.createAppBarAction(context),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadMaterials,
@@ -140,6 +130,16 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
               contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.psychology_alt, color: Colors.blue),
+                tooltip: 'Ask AI to find materials',
+                onPressed: () {
+                  AIHelper.showAssistant(
+                    context,
+                    initialQuestion: 'Help me find study materials about ${_searchQuery.isEmpty ? 'my subjects' : _searchQuery}',
+                  );
+                },
+              ),
             ),
             onChanged: (value) {
               setState(() {
@@ -259,7 +259,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                         IconButton(
                           icon: const Icon(Icons.psychology_alt, color: Colors.blueAccent),
                           tooltip: 'AI Assist',
-                          onPressed: () => _showAIAssistant(context, material),
+                          onPressed: () => AIHelper.showExplanationAssistant(context, material),
                           constraints: const BoxConstraints(),
                           padding: EdgeInsets.zero,
                           iconSize: 22,
@@ -338,7 +338,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
           const SizedBox(height: 16),
           if (_selectedCategory == 'All' && _searchQuery.isEmpty)
             ElevatedButton.icon(
-              onPressed: () => _showAIAssistant(context, null),
+              onPressed: () => AIHelper.showStudyPlanningAssistant(context),
               icon: const Icon(Icons.psychology_alt),
               label: const Text('Ask AI Assistant'),
               style: ElevatedButton.styleFrom(

@@ -18,7 +18,6 @@ class AIAssistantUtils {
     showDialog(
       context: context,
       builder: (context) {
-        final controller = TextEditingController(text: question);
         return CompactAIAssistantDialog(material: material);
       },
     );

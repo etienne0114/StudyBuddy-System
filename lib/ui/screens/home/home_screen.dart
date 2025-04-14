@@ -115,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Study Scheduler'),
+        title: const Text('Study Buddy'),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
@@ -640,7 +640,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // AI Learning Assistant Banner
           Container(
             margin: const EdgeInsets.all(16),
-            height: 180,
+            height: 220,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [Colors.blueAccent.shade700, Colors.blueAccent.shade400],
@@ -681,7 +681,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: const Icon(
                                     Icons.psychology_alt,
                                     color: Colors.white,
-                                    size: 24,
+                                    size: 20,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -717,7 +717,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.blueAccent,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               ),
@@ -730,7 +730,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Icon(
                         Icons.smart_toy_outlined,
                         color: Colors.white,
-                        size: 80,
+                        size: 60,
                       ),
                     ],
                   ),
