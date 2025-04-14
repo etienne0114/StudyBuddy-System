@@ -5,31 +5,30 @@ import 'package:flutter/foundation.dart';
 enum ConnectivityStatus { wifi, mobile, none }
 
 class ConnectivityService {
-  // Singleton pattern
   static final ConnectivityService _instance = ConnectivityService._internal();
   factory ConnectivityService() => _instance;
   ConnectivityService._internal();
-  
+
   final Connectivity _connectivity = Connectivity();
-  
-  // Stream controller for connectivity status
+
   final _controller = StreamController<ConnectivityStatus>.broadcast();
-  StreamSubscription<ConnectivityResult>? _subscription;
-  
-  // Current status
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
+
   ConnectivityStatus _lastStatus = ConnectivityStatus.none;
   ConnectivityStatus get lastStatus => _lastStatus;
-  
-  // Initialize the service
+
   void initialize() {
-    _subscription = _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
+    _subscription = _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
+      _updateConnectionStatus(result);
+    });
     _checkInitialConnection();
   }
-  
-  // Check connectivity status on startup
+
   Future<void> _checkInitialConnection() async {
     try {
-      final result = await _connectivity.checkConnectivity();
+      final results = await _connectivity.checkConnectivity();
+      final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
       _updateConnectionStatus(result);
     } catch (e) {
       if (kDebugMode) {
@@ -37,11 +36,10 @@ class ConnectivityService {
       }
     }
   }
-  
-  // Update status based on connectivity result
+
   void _updateConnectionStatus(ConnectivityResult result) {
     ConnectivityStatus status;
-    
+
     switch (result) {
       case ConnectivityResult.wifi:
         status = ConnectivityStatus.wifi;
@@ -53,42 +51,39 @@ class ConnectivityService {
         status = ConnectivityStatus.none;
         break;
     }
-    
-    // Only update and notify if status changed
+
     if (_lastStatus != status) {
       _lastStatus = status;
       _controller.add(status);
-      
+
       if (kDebugMode) {
         print('Connectivity status changed to $status');
       }
     }
   }
-  
-  // Get connectivity status stream
+
   Stream<ConnectivityStatus> get statusStream => _controller.stream;
-  
-  // Check if device is connected
+
   bool isConnected() {
-    return _lastStatus == ConnectivityStatus.wifi || 
+    return _lastStatus == ConnectivityStatus.wifi ||
            _lastStatus == ConnectivityStatus.mobile;
   }
-  
-  // Check connectivity on demand
+
   Future<bool> checkConnectivity() async {
     try {
-      final result = await _connectivity.checkConnectivity();
+      final results = await _connectivity.checkConnectivity();
+      final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
       _updateConnectionStatus(result);
       return result != ConnectivityResult.none;
     } catch (e) {
       if (kDebugMode) {
         print('Error checking connectivity: $e');
-      }
+      }correct it
+      
       return false;
     }
   }
-  
-  // Dispose resources
+
   void dispose() {
     _subscription?.cancel();
     _controller.close();
