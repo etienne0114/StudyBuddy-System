@@ -1,11 +1,12 @@
 // lib/ui/screens/materials/material_detail_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:study_scheduler/constants/app_colors.dart';
-import 'package:study_scheduler/constants/app_styles.dart';
 import 'package:study_scheduler/data/models/study_material.dart';
+import 'package:study_scheduler/helpers/ai_helper.dart';
+import 'package:study_scheduler/ui/screens/materials/add_material_screen.dart';
+import 'package:study_scheduler/data/repositories/study_materials_repository.dart';
 
-class MaterialDetailScreen extends StatelessWidget {
+class MaterialDetailScreen extends StatefulWidget {
   final StudyMaterial material;
 
   const MaterialDetailScreen({
@@ -14,15 +15,38 @@ class MaterialDetailScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<MaterialDetailScreen> createState() => _MaterialDetailScreenState();
+}
+
+class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
+  final StudyMaterialsRepository _repository = StudyMaterialsRepository();
+  late StudyMaterial _material;
+  
+  @override
+  void initState() {
+    super.initState();
+    _material = widget.material;
+  }
+  
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Material Details'),
         actions: [
+          AIHelper.createAppBarAction(context, material: _material),
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              // Edit material functionality
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddMaterialScreen(material: _material),
+                ),
+              ).then((_) {
+                // Refresh material data
+                _refreshMaterial();
+              });
             },
           ),
           IconButton(
@@ -45,10 +69,25 @@ class MaterialDetailScreen extends StatelessWidget {
             _buildFileSection(context),
             const SizedBox(height: 24),
             _buildMetadataSection(context),
+            const SizedBox(height: 24),
+            _buildAIActionsSection(context),
           ],
         ),
       ),
     );
+  }
+  
+  Future<void> _refreshMaterial() async {
+    try {
+      final updatedMaterial = await _repository.getMaterialById(_material.id);
+      if (updatedMaterial != null && mounted) {
+        setState(() {
+          _material = updatedMaterial;
+        });
+      }
+    } catch (e) {
+      // Handle error silently
+    }
   }
 
   Widget _buildHeaderSection(BuildContext context) {
@@ -68,12 +107,12 @@ class MaterialDetailScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: Theme.of(context).primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     _getCategoryIcon(),
-                    color: AppColors.primary,
+                    color: Theme.of(context).primaryColor,
                     size: 32,
                   ),
                 ),
@@ -83,8 +122,11 @@ class MaterialDetailScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        material.title,
-                        style: AppStyles.heading2,
+                        _material.title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Container(
@@ -93,13 +135,13 @@ class MaterialDetailScreen extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
+                          color: Theme.of(context).primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          material.category,
-                          style: const TextStyle(
-                            color: AppColors.primary,
+                          _material.category,
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -117,7 +159,7 @@ class MaterialDetailScreen extends StatelessWidget {
   }
 
   Widget _buildDescriptionSection(BuildContext context) {
-    if (material.description == null || material.description!.isEmpty) {
+    if (_material.description == null || _material.description!.isEmpty) {
       return const SizedBox.shrink();
     }
     
@@ -133,11 +175,14 @@ class MaterialDetailScreen extends StatelessWidget {
           children: [
             const Text(
               'Description',
-              style: AppStyles.heading3,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              material.description!,
+              _material.description!,
               style: const TextStyle(
                 fontSize: 16,
                 height: 1.5,
@@ -150,8 +195,8 @@ class MaterialDetailScreen extends StatelessWidget {
   }
 
   Widget _buildFileSection(BuildContext context) {
-    if ((material.filePath == null || material.filePath!.isEmpty) &&
-        (material.fileUrl == null || material.fileUrl!.isEmpty)) {
+    if ((_material.filePath == null || _material.filePath!.isEmpty) &&
+        (_material.fileUrl == null || _material.fileUrl!.isEmpty)) {
       return const SizedBox.shrink();
     }
     
@@ -167,13 +212,16 @@ class MaterialDetailScreen extends StatelessWidget {
           children: [
             const Text(
               'Attached File',
-              style: AppStyles.heading3,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 12),
             ListTile(
               leading: Icon(
                 _getFileTypeIcon(),
-                color: AppColors.primary,
+                color: Theme.of(context).primaryColor,
                 size: 36,
               ),
               title: Text(
@@ -183,18 +231,27 @@ class MaterialDetailScreen extends StatelessWidget {
                 ),
               ),
               subtitle: Text(
-                material.isOnline ? 'Online Resource' : 'Local File',
+                _material.isOnline ? 'Online Resource' : 'Local File',
                 style: TextStyle(
                   color: Colors.grey[600],
                 ),
               ),
               trailing: IconButton(
                 icon: Icon(
-                  material.isOnline ? Icons.open_in_new : Icons.download,
-                  color: AppColors.primary,
+                  _material.isOnline ? Icons.open_in_new : Icons.download,
+                  color: Theme.of(context).primaryColor,
                 ),
                 onPressed: () {
                   // Open or download file
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        _material.isOnline
+                            ? 'Opening ${_getFileName()}'
+                            : 'Downloading ${_getFileName()}'
+                      ),
+                    ),
+                  );
                 },
               ),
               shape: RoundedRectangleBorder(
@@ -227,31 +284,125 @@ class MaterialDetailScreen extends StatelessWidget {
           children: [
             const Text(
               'Details',
-              style: AppStyles.heading3,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 12),
             _buildMetadataItem(
               context,
               'Created',
-              _formatDate(material.createdAt),
+              _formatDate(_material.createdAt),
               Icons.calendar_today,
             ),
             const Divider(),
             _buildMetadataItem(
               context,
               'Last Updated',
-              _formatDate(material.updatedAt),
+              _formatDate(_material.updatedAt),
               Icons.update,
             ),
-            if (material.fileType != null) ...[
+            if (_material.fileType != null) ...[
               const Divider(),
               _buildMetadataItem(
                 context,
                 'File Type',
-                material.fileType!,
+                _material.fileType!.toUpperCase(),
                 Icons.description,
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildAIActionsSection(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'AI Assistant Actions',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.psychology_alt, size: 16),
+                  label: const Text('Explain'),
+                  onPressed: () {
+                    AIHelper.showAssistant(
+                      context,
+                      material: _material,
+                      initialQuestion: 'Explain the concepts in ${_material.title}',
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.question_answer, size: 16),
+                  label: const Text('Practice Questions'),
+                  onPressed: () {
+                    AIHelper.showAssistant(
+                      context,
+                      material: _material,
+                      initialQuestion: 'Create practice questions about ${_material.title}',
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.summarize, size: 16),
+                  label: const Text('Summarize'),
+                  onPressed: () {
+                    AIHelper.showAssistant(
+                      context,
+                      material: _material,
+                      initialQuestion: 'Summarize the key points of ${_material.title}',
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.emoji_objects, size: 16),
+                  label: const Text('Study Plan'),
+                  onPressed: () {
+                    AIHelper.showAssistant(
+                      context,
+                      material: _material,
+                      initialQuestion: 'Create a study plan for learning ${_material.title}',
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -299,7 +450,7 @@ class MaterialDetailScreen extends StatelessWidget {
   }
 
   IconData _getCategoryIcon() {
-    switch (material.category.toLowerCase()) {
+    switch (_material.category.toLowerCase()) {
       case 'document':
         return Icons.description;
       case 'video':
@@ -318,9 +469,9 @@ class MaterialDetailScreen extends StatelessWidget {
   }
 
   IconData _getFileTypeIcon() {
-    if (material.fileType == null) return Icons.insert_drive_file;
+    if (_material.fileType == null) return Icons.insert_drive_file;
     
-    final type = material.fileType!.toLowerCase();
+    final type = _material.fileType!.toLowerCase();
     if (type.contains('pdf')) return Icons.picture_as_pdf;
     if (type.contains('doc')) return Icons.description;
     if (type.contains('xls')) return Icons.table_chart;
@@ -336,11 +487,11 @@ class MaterialDetailScreen extends StatelessWidget {
   }
 
   String _getFileName() {
-    if (material.filePath != null && material.filePath!.isNotEmpty) {
-      return material.filePath!.split('/').last;
+    if (_material.filePath != null && _material.filePath!.isNotEmpty) {
+      return _material.filePath!.split('/').last;
     }
-    if (material.fileUrl != null && material.fileUrl!.isNotEmpty) {
-      return material.fileUrl!.split('/').last;
+    if (_material.fileUrl != null && _material.fileUrl!.isNotEmpty) {
+      return _material.fileUrl!.split('/').last;
     }
     return 'File';
   }
@@ -363,17 +514,35 @@ class MaterialDetailScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Material'),
-        content: Text('Are you sure you want to delete "${material.title}"?'),
+        content: Text('Are you sure you want to delete "${_material.title}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               // Delete material and return to previous screen
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Return to materials list
+              try {
+                await _repository.deleteMaterial(_material.id);
+                if (mounted) {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); // Return to materials list
+                  
+                  // Show success message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Material deleted successfully')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context); // Close dialog
+                  // Show error message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error deleting material: $e')),
+                  );
+                }
+              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),

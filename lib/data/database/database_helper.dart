@@ -6,6 +6,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:study_scheduler/data/models/activity.dart';
 import 'package:study_scheduler/data/models/schedule.dart';
 import 'package:study_scheduler/data/models/study_material.dart';
+import 'package:flutter/foundation.dart'; // Add this import for kDebugMode
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -368,19 +369,150 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) => StudyMaterial.fromMap(maps[i]));
   }
   
+  
+    Future<List<StudyMaterial>> getRecentMaterials() async {
+    try {
+      final Database db = await database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'study_materials',
+        orderBy: 'updatedAt DESC',
+        limit: 1000,
+      );
+      return List.generate(maps.length, (i) => StudyMaterial.fromMap(maps[i]));
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting recent materials: $e');
+      }
+      return [];
+    }
+  }
+  
   // Get AI service suggestions based on material category
   Future<List<String>> getRecommendedAIServicesForCategory(String category) async {
-    final Database db = await database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
-      SELECT t.aiService, COUNT(*) as count
-      FROM ai_usage_tracking t
-      JOIN study_materials m ON t.materialId = m.id
-      WHERE m.category = ?
-      GROUP BY t.aiService
-      ORDER BY count DESC
-      LIMIT 3
-    ''', [category]);
-    
-    return maps.map((map) => map['aiService'] as String).toList();
+    try {
+      final Database db = await database;
+      
+      final tablesExist = await _checkTableExists(db, 'ai_usage_tracking');
+      if (!tablesExist) {
+        return _getDefaultAIServicesForCategory(category);
+      }
+      
+      final List<Map<String, dynamic>> maps = await db.rawQuery('''
+        SELECT t.aiService, COUNT(*) as count
+        FROM ai_usage_tracking t
+        JOIN study_materials m ON t.materialId = m.id
+        WHERE m.category = ?
+        GROUP BY t.aiService
+        ORDER BY count DESC
+        LIMIT 3
+      ''', [category]);
+      
+      if (maps.isEmpty) {
+        // Default recommendations if no data
+        return _getDefaultAIServicesForCategory(category);
+      }
+      
+      return maps.map((map) => map['aiService'] as String).toList();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting recommended AI services for category: $e');
+      }
+      // Return default recommendations if there's an error
+      return _getDefaultAIServicesForCategory(category);
+    }
   }
+  
+  // Check if a table exists in the database
+  Future<bool> _checkTableExists(Database db, String tableName) async {
+    try {
+      final result = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='$tableName';"
+      );
+      return result.isNotEmpty;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error checking if table exists: $e');
+      }
+      return false;
+    }
+  }
+  
+  // Default AI service recommendations by category
+  List<String> _getDefaultAIServicesForCategory(String category) {
+    switch (category.toLowerCase()) {
+      case 'document':
+        return ['Claude', 'Perplexity', 'ChatGPT'];
+      case 'video':
+        return ['ChatGPT', 'Claude', 'Perplexity'];
+      case 'article':
+        return ['Perplexity', 'Claude', 'DeepSeek'];
+      case 'quiz':
+        return ['ChatGPT', 'Claude', 'DeepSeek'];
+      case 'practice':
+        return ['GitHub Copilot', 'DeepSeek', 'ChatGPT'];
+      case 'reference':
+        return ['Perplexity', 'Claude', 'ChatGPT'];
+      default:
+        return ['Claude', 'ChatGPT', 'Perplexity'];
+    }
+  }
+  
+  // Get material view count
+  Future<int> getMaterialViewCount(int materialId) async {
+    try {
+      final Database db = await database;
+      
+      final tablesExist = await _checkTableExists(db, 'ai_usage_tracking');
+      if (!tablesExist) {
+        return 0;
+      }
+      
+      final List<Map<String, dynamic>> result = await db.rawQuery('''
+        SELECT COUNT(*) as count
+        FROM ai_usage_tracking
+        WHERE materialId = ?
+      ''', [materialId]);
+      
+      if (result.isNotEmpty) {
+        return result.first['count'] as int;
+      }
+      return 0;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting material view count: $e');
+      }
+      return 0;
+    }
+  }
+  
+  // Get user's most used AI service
+  Future<String?> getMostUsedAIService() async {
+    try {
+      final Database db = await database;
+      
+      final tablesExist = await _checkTableExists(db, 'ai_usage_tracking');
+      if (!tablesExist) {
+        return null;
+      }
+      
+      final List<Map<String, dynamic>> result = await db.rawQuery('''
+        SELECT aiService, COUNT(*) as count
+        FROM ai_usage_tracking
+        GROUP BY aiService
+        ORDER BY count DESC
+        LIMIT 1
+      ''');
+      
+      if (result.isNotEmpty) {
+        return result.first['aiService'] as String;
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting most used AI service: $e');
+      }
+      return null;
+    }
+  }
+
 }

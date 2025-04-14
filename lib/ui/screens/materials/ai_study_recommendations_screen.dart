@@ -1,9 +1,10 @@
 // lib/ui/screens/materials/ai_study_recommendations_screen.dart
+// Screen to show AI-based study recommendations
 
 import 'package:flutter/material.dart';
 import 'package:study_scheduler/data/models/study_material.dart';
 import 'package:study_scheduler/data/repositories/study_materials_repository.dart';
-import 'package:study_scheduler/ui/screens/materials/ai_assistant_dialog.dart';
+import 'package:study_scheduler/helpers/ai_helper.dart';
 import 'package:study_scheduler/ui/screens/materials/material_detail_screen.dart';
 
 class AIStudyRecommendationsScreen extends StatefulWidget {
@@ -34,14 +35,22 @@ class _AIStudyRecommendationsScreenState extends State<AIStudyRecommendationsScr
     });
     
     try {
-      // Get AI-based recommended materials
-      final recommendedMaterials = await _repository.getMaterials();
+      // Load data in parallel for better performance
+      final recommendedFuture = _repository.getRecommendedMaterials();
+      final popularFuture = _repository.getMostAccessedMaterials();
+      final servicesFuture = _repository.getMostUsedAIServices();
       
-      // Get popular materials based on AI usage
-      final popularMaterials = await _repository.getMostAccessedMaterials();
+      // Wait for all futures to complete
+      final results = await Future.wait([
+        recommendedFuture,
+        popularFuture,
+        servicesFuture,
+      ]);
       
-      // Get popular AI services
-      final popularAIServices = await _repository.getMostUsedAIServices();
+      // Extract results
+      final recommendedMaterials = results[0] as List<StudyMaterial>;
+      final popularMaterials = results[1] as List<StudyMaterial>;
+      final popularAIServices = results[2] as List<Map<String, dynamic>>;
       
       // Get recommended AI services by category
       final categoryAIRecommendations = <String, List<String>>{};
@@ -72,13 +81,6 @@ class _AIStudyRecommendationsScreenState extends State<AIStudyRecommendationsScr
         );
       }
     }
-  }
-  
-  void _showAIAssistant(BuildContext context, StudyMaterial? material) {
-    showDialog(
-      context: context,
-      builder: (context) => AIAssistantDialog(material: material),
-    );
   }
 
   @override
@@ -125,11 +127,7 @@ class _AIStudyRecommendationsScreenState extends State<AIStudyRecommendationsScr
                 ],
               ),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAIAssistant(context, null),
-        backgroundColor: Colors.blueAccent,
-        child: const Icon(Icons.psychology_alt),
-      ),
+      floatingActionButton: AIHelper.createFloatingButton(context),
     );
   }
   
@@ -192,7 +190,7 @@ class _AIStudyRecommendationsScreenState extends State<AIStudyRecommendationsScr
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => _showAIAssistant(context, null),
+              onPressed: () => AIHelper.showAssistant(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.blueAccent.shade700,
@@ -289,7 +287,7 @@ class _AIStudyRecommendationsScreenState extends State<AIStudyRecommendationsScr
                       icon: const Icon(Icons.psychology_alt, size: 18, color: Colors.blueAccent),
                       constraints: const BoxConstraints(),
                       padding: EdgeInsets.zero,
-                      onPressed: () => _showAIAssistant(context, material),
+                      onPressed: () => AIHelper.showExplanationAssistant(context, material),
                     ),
                   ],
                 ),
@@ -371,7 +369,10 @@ class _AIStudyRecommendationsScreenState extends State<AIStudyRecommendationsScr
                 borderRadius: BorderRadius.circular(12),
               ),
               child: InkWell(
-                onTap: () => _showAIAssistant(context, null),
+                onTap: () => AIHelper.showAssistant(
+                  context,
+                  initialQuestion: 'Tell me about what you can help with',
+                ),
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),

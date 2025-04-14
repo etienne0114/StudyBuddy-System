@@ -7,7 +7,7 @@ import 'package:study_scheduler/routes.dart';
 import 'package:study_scheduler/services/auth_service.dart';
 import 'package:study_scheduler/ui/screens/auth/login_screen.dart';
 import 'package:study_scheduler/ui/screens/home/home_screen.dart';
-import 'package:study_scheduler/ui/widgets/global_ai_button.dart';
+
 
 class StudySchedulerApp extends StatelessWidget {
   const StudySchedulerApp({Key? key}) : super(key: key);
@@ -59,8 +59,8 @@ class StudySchedulerApp extends StatelessWidget {
           ),
         ),
         // Add custom AI-specific theming
-        extensions: [
-          const AIThemeExtension(
+        extensions: const [
+          AIThemeExtension(
             aiPrimaryColor: Colors.blue,
             aiSecondaryColor: Colors.purple,
             aiBackgroundColor: Color(0xFFF5F7FA),
@@ -88,13 +88,10 @@ class StudySchedulerApp extends StatelessWidget {
             // only when on non-login screens and when the keyboard is not showing
             if (Provider.of<AuthService>(context).isAuthenticated &&
                 MediaQuery.of(context).viewInsets.bottom == 0)
-              Positioned(
+              const Positioned(
                 right: 16,
-                bottom: 80, // Position above the bottom navigation bar
-                child: GlobalAIButton(
-                  color: Colors.blue,
-                  size: 48,
-                ),
+                bottom: 80, child: SizedBox(), // Position above the bottom navigation bar
+                
               ),
           ],
         );
