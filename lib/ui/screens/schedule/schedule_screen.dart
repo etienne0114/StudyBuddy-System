@@ -365,7 +365,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   
                   // List of schedules
                   ..._schedules.map((schedule) {
-                    final Color scheduleColor = Color(schedule.color);
+                    final Color scheduleColor = schedule.color != null 
+                        ? Color(schedule.color)
+                        : Colors.grey;
                         
                     return RadioListTile<int?>(
                       title: Text(schedule.title),

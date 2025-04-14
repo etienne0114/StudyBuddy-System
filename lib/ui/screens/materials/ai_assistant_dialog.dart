@@ -2,8 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:study_scheduler/data/models/study_material.dart';
+import 'package:study_scheduler/data/models/ai_service.dart';
+import 'package:study_scheduler/data/repositories/study_materials_repository.dart';
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 
 class AIAssistantDialog extends StatefulWidget {
   final StudyMaterial? material;
@@ -24,21 +25,34 @@ class _AIAssistantDialogState extends State<AIAssistantDialog> {
   String _response = '';
   bool _showMaterialContext = true;
   
-  // Available AI services
-  final List<String> _services = [
-    'Claude',
-    'ChatGPT',
-    'GitHub Copilot',
-    'DeepSeek',
-    'Perplexity'
-  ];
+  // Create repository instance
+  final StudyMaterialsRepository _repository = StudyMaterialsRepository();
+  
+  // Get all available AI services
+  final List<AIService> _services = AIService.getAllServices();
 
   @override
   void initState() {
     super.initState();
     // Pre-fill question if material is provided
     if (widget.material != null) {
-      _questionController.text = 'How can I plan my day?';
+      _questionController.text = 'Help me understand ${widget.material!.title}';
+    }
+    
+    // Try to get the user's most used service
+    _loadPreferredService();
+  }
+  
+  Future<void> _loadPreferredService() async {
+    try {
+      final preferredService = await _repository.getMostUsedAIService();
+      if (preferredService != null && mounted) {
+        setState(() {
+          _selectedAIService = preferredService;
+        });
+      }
+    } catch (e) {
+      // No-op, keep default service
     }
   }
 
@@ -49,8 +63,12 @@ class _AIAssistantDialogState extends State<AIAssistantDialog> {
   }
 
   Future<void> _processQuestion() async {
-    final question = _questionController.text.trim();
-    if (question.isEmpty) return;
+    if (_questionController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a question')),
+      );
+      return;
+    }
 
     setState(() {
       _isProcessing = true;
@@ -58,104 +76,74 @@ class _AIAssistantDialogState extends State<AIAssistantDialog> {
     });
 
     try {
-      // Simulate processing delay
-      await Future.delayed(const Duration(milliseconds: 800));
+      final service = AIService.getServiceByName(_selectedAIService);
       
-      // Generate response
-      String response = _generateResponse(question);
+      String materialContext = '';
+      if (widget.material != null && _showMaterialContext) {
+        materialContext = 
+          'Title: ${widget.material!.title}\n'
+          'Category: ${widget.material!.category}\n'
+          'Description: ${widget.material!.description ?? 'No description provided'}\n';
+      }
+
+      final response = await _getAIResponse(service, materialContext);
+      
+      // Track usage if a material is being used
+      if (widget.material != null) {
+        await _repository.trackAIUsage(
+          widget.material!.id, 
+          _selectedAIService, 
+          _questionController.text
+        );
+      } else {
+        // Track general AI usage
+        await _repository.trackAIUsage(
+          null, 
+          _selectedAIService, 
+          _questionController.text
+        );
+      }
       
       if (mounted) {
         setState(() {
           _response = response;
-          _isProcessing = false;
         });
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Error processing request: $e');
-      }
-      
-      // Show a generic response instead of error
       if (mounted) {
         setState(() {
-          _response = "I'm here to help with your studies. What would you like to know?";
+          _response = 'Error processing request: ${e.toString()}';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
           _isProcessing = false;
         });
       }
     }
   }
-  
-  String _generateResponse(String question) {
-    // Simple response generation based on keywords
-    if (question.toLowerCase().contains('plan') || 
-        question.toLowerCase().contains('day') ||
-        question.toLowerCase().contains('schedule')) {
-      return '''
-Here's a suggested daily plan:
 
-**Morning Routine**
-- 7:00 AM: Wake up and hydrate
-- 7:15 AM: Quick exercise/stretching (15 min)
-- 7:30 AM: Shower and get ready
-- 8:00 AM: Healthy breakfast
-- 8:30 AM: Review your day's goals and priorities
-
-**Study/Work Sessions**
-- 9:00 AM - 10:30 AM: Deep work session 1
-- 10:30 AM - 10:45 AM: Short break
-- 10:45 AM - 12:15 PM: Deep work session 2
-- 12:15 PM - 1:00 PM: Lunch break
-
-**Afternoon**
-- 1:00 PM - 2:30 PM: Deep work session 3
-- 2:30 PM - 2:45 PM: Short break
-- 2:45 PM - 4:15 PM: Deep work session 4
-- 4:15 PM - 5:00 PM: Review progress, plan tomorrow
-
-**Evening**
-- 5:00 PM - 6:00 PM: Exercise/personal time
-- 6:00 PM - 7:00 PM: Dinner
-- 7:00 PM - 9:00 PM: Relaxation, hobbies
-- 9:00 PM - 10:00 PM: Wind down routine
-- 10:00 PM: Sleep
-''';
-    } else if (question.toLowerCase().contains('study') || 
-               question.toLowerCase().contains('learn') ||
-               question.toLowerCase().contains('material')) {
-      return '''
-Here are effective study techniques:
-
-1. **Active Recall**: Test yourself instead of passively rereading
-   
-2. **Spaced Repetition**: Review material at increasing intervals
-   
-3. **Pomodoro Technique**: Study in focused 25-minute blocks with 5-minute breaks
-   
-4. **Feynman Technique**: Explain concepts in simple terms to identify knowledge gaps
-   
-5. **Mind Mapping**: Create visual connections between ideas
-   
-6. **Interleaving**: Mix different subjects or problem types
-   
-7. **Concrete Examples**: Apply concepts to real-world scenarios
-
-Which technique would you like to try first?
-''';
+  Future<String> _getAIResponse(AIService service, String materialContext) async {
+    // Simulate network delay
+    await Future.delayed(const Duration(seconds: 2));
+    
+    // In a real implementation, this would call the actual AI service API
+    final question = _questionController.text.trim();
+    
+    if (materialContext.isNotEmpty) {
+      return 'Based on your material:\n\n$materialContext\n\n${service.getSimulatedResponse(question)}';
     } else {
-      return '''
-I can help with your studies in many ways:
-
-• Creating study schedules and plans
-• Explaining difficult concepts
-• Recommending study techniques
-• Generating practice questions
-• Summarizing materials
-• Breaking down complex topics
-• Providing motivation and tips
-
-What specific help do you need today?
-''';
+      return service.getSimulatedResponse(question);
     }
+  }
+
+  // Simplified method to simulate opening an AI service
+  void _launchAIService(AIService service) {
+    // In a real app, we would use url_launcher to open the URL
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Opening ${service.name} at ${service.url}')),
+    );
   }
 
   @override
@@ -165,32 +153,28 @@ What specific help do you need today?
         borderRadius: BorderRadius.circular(16),
       ),
       child: Container(
-        width: double.infinity,
+        width: double.maxFinite,
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.8,
           maxWidth: 600,
         ),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const CircleAvatar(
-                  backgroundColor: Colors.blue,
-                  child: Icon(Icons.psychology_alt, color: Colors.white),
-                ),
+                const Icon(Icons.psychology_alt, color: Colors.blueAccent, size: 28),
                 const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'AI Learning Assistant',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                const Text(
+                  'AI Learning Assistant',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
@@ -215,7 +199,7 @@ What specific help do you need today?
                         _showMaterialContext = value;
                       });
                     },
-                    activeColor: Colors.blue,
+                    activeColor: Colors.blueAccent,
                   ),
                 ],
               ),
@@ -243,8 +227,7 @@ What specific help do you need today?
                           fontStyle: FontStyle.italic,
                         ),
                       ),
-                      if (widget.material!.description != null && 
-                         widget.material!.description!.isNotEmpty) ...[
+                      if (widget.material!.description != null && widget.material!.description!.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Text(
                           widget.material!.description!,
@@ -264,15 +247,15 @@ What specific help do you need today?
             TextField(
               controller: _questionController,
               decoration: InputDecoration(
-                hintText: 'Ask a question...',
+                hintText: 'Ask a question about your material...',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
                 prefixIcon: const Icon(Icons.help_outline),
               ),
-              maxLines: 2,
+              maxLines: 3,
               minLines: 1,
-              textInputAction: TextInputAction.newline,
+              textInputAction: TextInputAction.done,
               onSubmitted: (_) => _processQuestion(),
             ),
             const SizedBox(height: 16),
@@ -280,13 +263,7 @@ What specific help do you need today?
               children: [
                 DropdownButton<String>(
                   value: _selectedAIService,
-                  underline: Container(height: 1, color: Colors.grey[300]),
-                  items: _services.map((service) {
-                    return DropdownMenuItem<String>(
-                      value: service,
-                      child: Text(service),
-                    );
-                  }).toList(),
+                  hint: const Text('Select AI Service'),
                   onChanged: (value) {
                     if (value != null) {
                       setState(() {
@@ -294,21 +271,50 @@ What specific help do you need today?
                       });
                     }
                   },
+                  items: _services.map((service) {
+                    return DropdownMenuItem<String>(
+                      value: service.name,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.smart_toy,
+                            color: service.color,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(service.name),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: 'Open $_selectedAIService',
+                  child: IconButton(
+                    icon: const Icon(Icons.open_in_new, size: 20),
+                    onPressed: () {
+                      final service = AIService.getServiceByName(_selectedAIService);
+                      _launchAIService(service);
+                    },
+                  ),
                 ),
                 const Spacer(),
                 ElevatedButton(
                   onPressed: _isProcessing ? null : _processQuestion,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Colors.blueAccent,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   ),
                   child: _isProcessing
                       ? const SizedBox(
-                          width: 20, height: 20,
+                          width: 20,
+                          height: 20,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2, 
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            strokeWidth: 2,
+                            color: Colors.white,
                           ),
                         )
                       : const Text('Ask AI'),
@@ -326,7 +332,22 @@ What specific help do you need today?
                   border: Border.all(color: Colors.grey[300]!),
                 ),
                 child: _isProcessing
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text(
+                              'Consulting AI...',
+                              style: TextStyle(
+                                fontStyle: FontStyle.italic,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
                     : _response.isEmpty
                         ? const Center(
                             child: Text(
@@ -338,17 +359,42 @@ What specific help do you need today?
                             ),
                           )
                         : SingleChildScrollView(
-                            child: Text(
-                              _response,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                height: 1.5,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: AIService.getServiceByName(_selectedAIService)
+                                          .color
+                                          .withAlpha(50),
+                                      child: Text(
+                                        _selectedAIService[0],
+                                        style: TextStyle(
+                                          color: AIService.getServiceByName(_selectedAIService)
+                                              .color,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        _response,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             const Center(
               child: Text(
                 'Note: AI responses are simulated in this demo',

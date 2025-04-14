@@ -136,7 +136,7 @@ Would you like me to help you customize this plan based on your specific needs?
     } else {
       // Generic response
       return '''
-I can help you with that! Based on your question about "$question", here are some suggestions:
+I can help you with that! Based on your question about "${question}", here are some suggestions:
 
 1. Break down your goal into smaller, manageable tasks
 2. Prioritize these tasks based on importance and urgency
@@ -151,7 +151,7 @@ Would you like more specific advice about any of these points?
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Colors.blue;
+    final Color primaryColor = Colors.blue;
     
     return Dialog(
       shape: RoundedRectangleBorder(

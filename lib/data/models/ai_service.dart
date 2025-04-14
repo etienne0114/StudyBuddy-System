@@ -25,20 +25,46 @@ class AIService {
     
     // Generic responses based on question content
     if (questionLower.contains('explain') || questionLower.contains('understand')) {
-      return _getExplanation(question);
+      return '''
+Here's a simplified explanation:
+
+${_getExplanation(questionLower)}
+
+Would you like me to elaborate on any specific part?''';
     } else if (questionLower.contains('summarize') || questionLower.contains('summary')) {
-      return _getSummary(question);
+      return '''
+# Summary
+${_getSummary(questionLower)}
+
+Is there anything specific you'd like me to focus on?''';
     } else if (questionLower.contains('example') || questionLower.contains('practice')) {
-      return _getExample(question);
+      return '''
+Here's an example to help you understand:
+
+${_getExample(questionLower)}
+
+Would you like to see another example?''';
     } else if (questionLower.contains('compare') || questionLower.contains('difference')) {
-      return _getComparison(question);
+      return '''
+## Comparison
+${_getComparison(questionLower)}
+
+These differences highlight why you might choose one over the other depending on your specific needs.''';
     } else if (questionLower.contains('quiz') || questionLower.contains('test')) {
-      return _getQuizQuestions();
-    } else if (questionLower.contains('plan') || questionLower.contains('schedule')) {
-      return _getDayPlan();
+      return '''
+Here are some practice questions to test your understanding:
+
+${_getQuizQuestions()}
+
+Would you like me to provide the answers or would you prefer to try answering them first?''';
     } else {
       // Generic response
-      return _getGenericResponse(question);
+      return '''
+Based on your question about "${_getTopicFromQuestion(questionLower)}", here's what I can tell you:
+
+${_getGenericResponse(questionLower)}
+
+Let me know if you'd like more specific information!''';
     }
   }
 
@@ -57,8 +83,7 @@ Understanding these components will help you grasp the bigger picture and see ho
 
   String _getSummary(String question) {
     final topic = _getTopicFromQuestion(question);
-    return '''# Summary
-$topic can be summarized as a systematic approach to solving complex problems through a series of well-defined steps. It involves analyzing requirements, designing solutions, implementing those solutions, and then evaluating their effectiveness.
+    return '''$topic can be summarized as a systematic approach to solving complex problems through a series of well-defined steps. It involves analyzing requirements, designing solutions, implementing those solutions, and then evaluating their effectiveness.
 
 The main points to remember are:
 - It follows a structured methodology
@@ -68,8 +93,8 @@ The main points to remember are:
   }
 
   String _getExample(String question) {
-    _getTopicFromQuestion(question);
-    return '''Here's an example to help you understand:
+    final topic = _getTopicFromQuestion(question);
+    return '''Let's look at a practical example of $topic:
 
 **Scenario**: A student is trying to learn a new concept for an upcoming exam.
 
@@ -88,21 +113,18 @@ This example demonstrates how the theoretical framework can be applied to achiev
     final topicA = parts.length > 1 ? _cleanTopic(parts[0].split(' ').last) : "Approach A";
     final topicB = parts.length > 1 ? _cleanTopic(parts[1].split(' ').first) : "Approach B";
     
-    return '''## Comparison
+    return '''
 | Aspect | $topicA | $topicB |
 |--------|---------|---------|
 | Foundational principle | Based on structural analysis | Based on functional analysis |
 | Primary focus | Emphasizes theoretical framework | Emphasizes practical application |
 | Learning curve | Steeper initial learning curve | More gradual learning progression |
 | Best used for | Complex conceptual understanding | Immediate practical implementation |
-| Supporting evidence | Strong theoretical research base | Extensive empirical validation |
-
-These differences highlight why you might choose one over the other depending on your specific needs.''';
+| Supporting evidence | Strong theoretical research base | Extensive empirical validation |''';
   }
 
   String _getQuizQuestions() {
-    return '''Here are some practice questions to test your understanding:
-
+    return '''
 1. What are the three main components of an effective learning strategy?
 
 2. How does spaced repetition differ from massed practice, and which is more effective for long-term retention?
@@ -111,43 +133,12 @@ These differences highlight why you might choose one over the other depending on
 
 4. Explain how the concept of "desirable difficulty" contributes to more effective learning.
 
-5. When studying complex material, which approach is generally more effective: focusing on one topic for an extended period or interleaving multiple related topics?
-
-Would you like me to provide the answers or would you prefer to try answering them first?''';
-  }
-
-  String _getDayPlan() {
-    return '''Here's a suggested daily plan:
-
-**Morning Routine**
-- 7:00 AM: Wake up and hydrate
-- 7:15 AM: Quick exercise/stretching
-- 8:00 AM: Breakfast and preparation
-- 8:30 AM: Review your day's goals
-
-**Study Sessions**
-- 9:00 AM - 10:30 AM: Focus session 1
-- 10:30 AM - 10:45 AM: Short break
-- 10:45 AM - 12:15 PM: Focus session 2
-- 12:15 PM - 1:00 PM: Lunch break
-
-**Afternoon**
-- 1:00 PM - 2:30 PM: Focus session 3
-- 2:30 PM - 2:45 PM: Short break
-- 2:45 PM - 4:15 PM: Focus session 4
-- 4:15 PM - 5:00 PM: Review and planning
-
-**Evening**
-- 5:00 PM - 6:00 PM: Exercise/personal time
-- 6:00 PM - 7:00 PM: Dinner
-- 7:00 PM - 9:00 PM: Relaxation or light review
-- 9:00 PM: Wind down routine''';
+5. When studying complex material, which approach is generally more effective: focusing on one topic for an extended period or interleaving multiple related topics?''';
   }
 
   String _getGenericResponse(String question) {
     final topic = _getTopicFromQuestion(question);
-    return '''Based on your question about "${_getTopicFromQuestion(question)}", here's what I can tell you:
-
+    return '''
 $topic is a fascinating area that combines theoretical concepts with practical applications. 
 
 Key aspects to understand include:
@@ -159,7 +150,7 @@ Key aspects to understand include:
 
 Many learners find it helpful to approach this topic by first mastering the core concepts before moving on to more complex applications. Visual aids, practical exercises, and discussion with peers can significantly enhance your understanding.
 
-Let me know if you'd like more specific information!''';
+If you're looking to deepen your knowledge, I recommend exploring some of the seminal works in this field, as well as recent research that shows how these concepts continue to evolve.''';
   }
 
   // Helper method to extract the topic from a question

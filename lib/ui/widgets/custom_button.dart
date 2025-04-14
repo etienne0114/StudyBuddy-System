@@ -30,7 +30,7 @@ class CustomButton extends StatelessWidget {
   }) : super(key: key);
 
   // Constructor with label for backward compatibility
-  const CustomButton.withLabel({
+  CustomButton.withLabel({
     Key? key,
     required String label,
     VoidCallback? onPressed,

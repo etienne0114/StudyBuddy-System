@@ -1,338 +1,185 @@
 // lib/data/repositories/study_materials_repository.dart
 
-import 'package:flutter/foundation.dart';
 import 'package:study_scheduler/data/models/study_material.dart';
 import 'package:study_scheduler/data/database/database_helper.dart';
-import 'package:study_scheduler/data/database/database_manager.dart';
+import 'package:study_scheduler/data/database/database_helper_extension.dart';
 
 class StudyMaterialsRepository {
   final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
-  final DatabaseManager _databaseManager = DatabaseManager.instance;
 
   // Get all study materials
   Future<List<StudyMaterial>> getMaterials() async {
-    try {
-      return await _databaseHelper.getStudyMaterials();
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error getting materials: $e');
-      }
-      return [];
-    }
+    return await _databaseHelper.getStudyMaterials();
   }
 
   // Get study material by ID
   Future<StudyMaterial?> getMaterialById(int id) async {
-    try {
-      return await _databaseHelper.getStudyMaterial(id);
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error getting material by id: $e');
-      }
-      return null;
-    }
+    return await _databaseHelper.getStudyMaterial(id);
   }
 
   // Get study materials by category
   Future<List<StudyMaterial>> getMaterialsByCategory(String category) async {
-    try {
-      return await _databaseHelper.getStudyMaterialsByCategory(category);
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error getting materials by category: $e');
-      }
-      return [];
-    }
+    return await _databaseHelper.getStudyMaterialsByCategory(category);
   }
 
   // Search study materials
   Future<List<StudyMaterial>> searchMaterials(String query) async {
-    try {
-      return await _databaseHelper.searchStudyMaterials(query);
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error searching materials: $e');
-      }
-      return [];
-    }
+    return await _databaseHelper.searchStudyMaterials(query);
   }
 
   // Add new study material
   Future<int> addMaterial(StudyMaterial material) async {
-    try {
-      return await _databaseHelper.insertStudyMaterial(material);
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error adding material: $e');
-      }
-      return -1;
-    }
+    return await _databaseHelper.insertStudyMaterial(material);
   }
 
   // Update existing study material
   Future<int> updateMaterial(StudyMaterial material) async {
-    try {
-      return await _databaseHelper.updateStudyMaterial(material);
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error updating material: $e');
-      }
-      return -1;
-    }
+    return await _databaseHelper.updateStudyMaterial(material);
   }
 
   // Delete study material
   Future<int> deleteMaterial(int id) async {
-    try {
-      return await _databaseHelper.deleteStudyMaterial(id);
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error deleting material: $e');
-      }
-      return -1;
-    }
+    return await _databaseHelper.deleteStudyMaterial(id);
   }
   
   // Get recommended materials (most recent for now)
   Future<List<StudyMaterial>> getRecommendedMaterials() async {
-    try {
-      final db = await _databaseManager.database;
-      final List<Map<String, dynamic>> maps = await db.query(
-        'study_materials',
-        orderBy: 'updatedAt DESC',
-        limit: 5
-      );
-      return List.generate(maps.length, (i) => StudyMaterial.fromMap(maps[i]));
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error getting recommended materials: $e');
-      }
-      return [];
-    }
+    return await _databaseHelper.getRecentMaterials();
   }
   
   // Track AI usage with a material
   Future<int> trackAIUsage(int? materialId, String aiService, String? query) async {
-    try {
-      final db = await _databaseManager.database;
-      final now = DateTime.now().toIso8601String();
-      
-      return await db.insert('ai_usage_tracking', {
-        'materialId': materialId,
-        'aiService': aiService,
-        'queryText': query,
-        'usageDate': now,
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error tracking AI usage: $e');
-      }
-      return -1;
-    }
+    return await _databaseHelper.trackAIUsage(materialId, aiService, query);
   }
   
   // Get most used AI services
   Future<List<Map<String, dynamic>>> getMostUsedAIServices() async {
-    try {
-      final db = await _databaseManager.database;
-      
-      // Check if table exists first
-      final tables = await db.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='ai_usage_tracking';"
-      );
-      
-      if (tables.isEmpty) {
-        if (kDebugMode) {
-          print('AI tracking table not found');
-        }
-        return [];
-      }
-      
-      final List<Map<String, dynamic>> maps = await db.rawQuery('''
-        SELECT aiService, COUNT(*) as count
-        FROM ai_usage_tracking
-        GROUP BY aiService
-        ORDER BY count DESC
-        LIMIT 5
-      ''');
-      
-      return maps;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error getting most used AI services: $e');
-      }
-      return [];
-    }
+    return await _databaseHelper.getMostUsedAIServices();
   }
   
   // Get materials most frequently accessed with AI
   Future<List<StudyMaterial>> getMostAccessedMaterials() async {
-    try {
-      final db = await _databaseManager.database;
-      
-      // Check if table exists first
-      final tables = await db.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='ai_usage_tracking';"
-      );
-      
-      if (tables.isEmpty) {
-        return getRecommendedMaterials();
-      }
-      
-      final List<Map<String, dynamic>> maps = await db.rawQuery('''
-        SELECT m.*, COUNT(t.id) as accessCount
-        FROM study_materials m
-        LEFT JOIN ai_usage_tracking t ON m.id = t.materialId
-        WHERE t.materialId IS NOT NULL
-        GROUP BY m.id
-        ORDER BY accessCount DESC
-        LIMIT 10
-      ''');
-      
-      if (maps.isEmpty) {
-        return getRecommendedMaterials();
-      }
-      
-      return List.generate(maps.length, (i) => StudyMaterial.fromMap(maps[i]));
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error getting most accessed materials: $e');
-      }
-      return getRecommendedMaterials();
-    }
+    return await _databaseHelper.getMostAccessedMaterials();
   }
   
   // Get recommended AI services based on material category
   Future<List<String>> getRecommendedAIServicesForCategory(String category) async {
-    try {
-      final db = await _databaseManager.database;
-      
-      // Check if table exists first
-      final tables = await db.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='ai_usage_tracking';"
-      );
-      
-      if (tables.isEmpty) {
-        return _getDefaultAIServicesForCategory(category);
-      }
-      
-      final List<Map<String, dynamic>> maps = await db.rawQuery('''
-        SELECT t.aiService, COUNT(*) as count
-        FROM ai_usage_tracking t
-        JOIN study_materials m ON t.materialId = m.id
-        WHERE m.category = ?
-        GROUP BY t.aiService
-        ORDER BY count DESC
-        LIMIT 3
-      ''', [category]);
-      
-      if (maps.isEmpty) {
-        return _getDefaultAIServicesForCategory(category);
-      }
-      
-      return maps.map((map) => map['aiService'] as String).toList();
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error getting recommended AI services for category: $e');
-      }
-      return _getDefaultAIServicesForCategory(category);
-    }
+    return await _databaseHelper.getRecommendedAIServicesForCategory(category);
   }
   
   // Get material view count
   Future<int> getMaterialViewCount(int materialId) async {
-    try {
-      final db = await _databaseManager.database;
-      
-      // Check if table exists first
-      final tables = await db.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='ai_usage_tracking';"
-      );
-      
-      if (tables.isEmpty) {
-        return 0;
-      }
-      
-      final List<Map<String, dynamic>> result = await db.rawQuery('''
-        SELECT COUNT(*) as count
-        FROM ai_usage_tracking
-        WHERE materialId = ?
-      ''', [materialId]);
-      
-      if (result.isNotEmpty) {
-        return result.first['count'] as int;
-      }
-      return 0;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error getting material view count: $e');
-      }
-      return 0;
-    }
+    return await _databaseHelper.getMaterialViewCount(materialId);
   }
   
   // Get user's most used AI service
   Future<String?> getMostUsedAIService() async {
+    return await _databaseHelper.getMostUsedAIService();
+  }
+  
+  // Get materials similar to a given material
+  Future<List<StudyMaterial>> getSimilarMaterials(int materialId) async {
+    return await _databaseHelper.getSimilarMaterials(materialId);
+  }
+  
+  // Ensure AI tables exist (call during app initialization)
+  Future<void> ensureAITablesExist() async {
+    await _databaseHelper.ensureAITablesExist();
+  }
+  
+  // Get AI learning summary stats
+  Future<Map<String, dynamic>> getAILearningSummary() async {
+    final db = await _databaseHelper.database;
+    
     try {
-      final db = await _databaseManager.database;
+      // Total AI sessions
+      final sessionCountResult = await db.rawQuery('SELECT COUNT(*) as count FROM ai_usage_tracking');
+      final sessionCount = sessionCountResult.first['count'] as int? ?? 0;
       
-      // Check if table exists first
-      final tables = await db.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='ai_usage_tracking';"
+      // Unique materials accessed with AI
+      final uniqueMaterialsResult = await db.rawQuery(
+        'SELECT COUNT(DISTINCT materialId) as count FROM ai_usage_tracking WHERE materialId IS NOT NULL'
       );
+      final uniqueMaterialsCount = uniqueMaterialsResult.first['count'] as int? ?? 0;
       
-      if (tables.isEmpty) {
-        return null;
-      }
+      // Most active day
+      final dayResult = await db.rawQuery('''
+        SELECT substr(usageDate, 1, 10) as day, COUNT(*) as count 
+        FROM ai_usage_tracking 
+        GROUP BY day 
+        ORDER BY count DESC 
+        LIMIT 1
+      ''');
+      final mostActiveDay = dayResult.isNotEmpty ? dayResult.first['day'] as String : null;
       
-      final List<Map<String, dynamic>> result = await db.rawQuery('''
-        SELECT aiService, COUNT(*) as count
-        FROM ai_usage_tracking
-        GROUP BY aiService
+      // Most studied category
+      final categoryResult = await db.rawQuery('''
+        SELECT m.category, COUNT(*) as count 
+        FROM ai_usage_tracking t
+        JOIN study_materials m ON t.materialId = m.id
+        GROUP BY m.category
         ORDER BY count DESC
         LIMIT 1
       ''');
+      final mostStudiedCategory = categoryResult.isNotEmpty ? categoryResult.first['category'] as String : null;
       
-      if (result.isNotEmpty) {
-        return result.first['aiService'] as String;
-      }
-      return null;
+      return {
+        'totalSessions': sessionCount,
+        'uniqueMaterialsAccessed': uniqueMaterialsCount,
+        'mostActiveDay': mostActiveDay,
+        'mostStudiedCategory': mostStudiedCategory,
+      };
     } catch (e) {
-      if (kDebugMode) {
-        print('Error getting most used AI service: $e');
-      }
-      return null;
+      return {
+        'totalSessions': 0,
+        'uniqueMaterialsAccessed': 0,
+        'mostActiveDay': null,
+        'mostStudiedCategory': null,
+      };
     }
   }
   
-  // Ensure AI tables exist (called during app initialization)
-  Future<void> ensureAITablesExist() async {
+  // Get user's learning streak (consecutive days using AI assistant)
+  Future<int> getLearningStreak() async {
+    final db = await _databaseHelper.database;
+    
     try {
-      await _databaseManager.ensureAITablesExist();
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error ensuring AI tables exist (handled): $e');
+      // Get all days with AI usage, ordered by date
+      final daysResult = await db.rawQuery('''
+        SELECT DISTINCT substr(usageDate, 1, 10) as day
+        FROM ai_usage_tracking
+        ORDER BY day DESC
+      ''');
+      
+      if (daysResult.isEmpty) return 0;
+      
+      final days = daysResult.map((res) => res['day'] as String).toList();
+      final today = DateTime.now().toIso8601String().substring(0, 10);
+      
+      // Check if user studied today
+      int streak = 0;
+      if (days.contains(today) || days.first == DateTime.now().subtract(const Duration(days: 1)).toIso8601String().substring(0, 10)) {
+        streak = 1;
+        
+        // Calculate streak by checking consecutive days
+        DateTime currentDate = days.first == today 
+            ? DateTime.now() 
+            : DateTime.parse(days.first);
+        
+        for (int i = 1; i < days.length; i++) {
+          final expectedPreviousDay = currentDate.subtract(const Duration(days: 1)).toIso8601String().substring(0, 10);
+          if (days[i] == expectedPreviousDay) {
+            streak++;
+            currentDate = currentDate.subtract(const Duration(days: 1));
+          } else {
+            break;
+          }
+        }
       }
-    }
-  }
-  
-  // Default AI service recommendations by category
-  List<String> _getDefaultAIServicesForCategory(String category) {
-    switch (category.toLowerCase()) {
-      case 'document':
-        return ['Claude', 'Perplexity', 'ChatGPT'];
-      case 'video':
-        return ['ChatGPT', 'Claude', 'Perplexity'];
-      case 'article':
-        return ['Perplexity', 'Claude', 'DeepSeek'];
-      case 'quiz':
-        return ['ChatGPT', 'Claude', 'DeepSeek'];
-      case 'practice':
-        return ['GitHub Copilot', 'DeepSeek', 'ChatGPT'];
-      case 'reference':
-        return ['Perplexity', 'Claude', 'ChatGPT'];
-      default:
-        return ['Claude', 'ChatGPT', 'Perplexity'];
+      
+      return streak;
+    } catch (e) {
+      return 0;
     }
   }
 }
