@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:study_scheduler/data/models/study_material.dart';
-import 'package:study_scheduler/data/models/ai_service.dart';
 import 'package:study_scheduler/data/repositories/study_materials_repository.dart';
 import 'dart:async';
 
@@ -137,7 +136,7 @@ Would you like me to help you customize this plan based on your specific needs?
     } else {
       // Generic response
       return '''
-I can help you with that! Based on your question about "${question}", here are some suggestions:
+I can help you with that! Based on your question about "$question", here are some suggestions:
 
 1. Break down your goal into smaller, manageable tasks
 2. Prioritize these tasks based on importance and urgency
@@ -152,7 +151,7 @@ Would you like more specific advice about any of these points?
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryColor = Colors.blue;
+    const Color primaryColor = Colors.blue;
     
     return Dialog(
       shape: RoundedRectangleBorder(
