@@ -114,9 +114,13 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
       final activity = Activity(
         id: widget.activity?.id,
         scheduleId: widget.schedule.id!,
-        title: _titleController.text,
-        description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
-        location: _locationController.text.isEmpty ? null : _locationController.text,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim().isNotEmpty 
+            ? _descriptionController.text.trim() 
+            : null,
+        location: _locationController.text.trim().isNotEmpty 
+            ? _locationController.text.trim() 
+            : null,
         dayOfWeek: _selectedDay,
         startTime: _timeOfDayToString(_startTime),
         endTime: _timeOfDayToString(_endTime),
@@ -128,16 +132,19 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
 
       final repository = Provider.of<ScheduleRepository>(context, listen: false);
       
-      if (widget.activity == null) {
+      if (widget.activity == null || widget.activity!.id == null) {
+        // Create new activity
         await repository.createActivity(activity);
       } else {
+        // Update existing activity
         await repository.updateActivity(activity);
       }
 
       if (mounted) {
-        Navigator.pop(context, true);
+        Navigator.pop(context, true); // Return true to indicate success
       }
     } catch (e) {
+      print('Error saving activity: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to save activity: ${e.toString()}')),
@@ -152,9 +159,11 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.activity != null && widget.activity!.id != null;
+    
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.activity == null ? 'Add Activity' : 'Edit Activity'),
+        title: Text(isEditing ? 'Edit Activity' : 'Add Activity'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -288,7 +297,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
                     ),
                     const SizedBox(height: 32),
                     CustomButton(
-                      text: widget.activity == null ? 'Add Activity' : 'Save Changes',
+                      text: isEditing ? 'Save Changes' : 'Add Activity',
                       onPressed: _saveActivity,
                     ),
                   ],
