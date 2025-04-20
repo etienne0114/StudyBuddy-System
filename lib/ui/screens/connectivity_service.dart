@@ -14,7 +14,11 @@ class ConnectivityService {
   
   // Stream controller for connectivity status
   final _controller = StreamController<ConnectivityStatus>.broadcast();
+<<<<<<< HEAD
   StreamSubscription<List<ConnectivityResult>>? _subscription;
+=======
+  StreamSubscription<ConnectivityResult>? _subscription;
+>>>>>>> parent of e81812a (Initial commit)
   
   // Current status
   ConnectivityStatus _lastStatus = ConnectivityStatus.none;
@@ -22,11 +26,15 @@ class ConnectivityService {
   
   // Initialize the service
   void initialize() {
+<<<<<<< HEAD
     _subscription = _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
       for (var result in results) {
         _updateConnectionStatus(result);
       }
     });
+=======
+    _subscription = _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
+>>>>>>> parent of e81812a (Initial commit)
     _checkInitialConnection();
   }
   
