@@ -26,21 +26,34 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
   bool _isLoading = false;
   List<Activity> _activities = [];
   List<int> _activitiesByDay = List.filled(7, 0); // Activity count for each day
+  late Schedule _currentSchedule;
   
   @override
   void initState() {
     super.initState();
+    _currentSchedule = widget.schedule;
     _tabController = TabController(length: 7, vsync: this);
     
     // Default to current day
-    final currentDayIndex = DateTime.now().weekday - 1; // 0-6 for Sunday-Saturday
+    final currentDayIndex = DateTime.now().weekday - 1; // 0-6 for Monday-Saturday
     _tabController.index = currentDayIndex;
     
     _loadActivities();
+    
+    // Listen for tab changes to update the view
+    _tabController.addListener(_onTabChanged);
+  }
+  
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging) {
+      // Tab has changed, reload activities for the new day
+      _loadActivities();
+    }
   }
   
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -53,8 +66,16 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
     try {
       final repository = Provider.of<ScheduleRepository>(context, listen: false);
       
+      // Refresh the schedule data first to ensure we have the latest
+      if (_currentSchedule.id != null) {
+        final updatedSchedule = await repository.getScheduleById(_currentSchedule.id!);
+        if (updatedSchedule != null) {
+          _currentSchedule = updatedSchedule;
+        }
+      }
+      
       // Get activities for this schedule
-      final activities = await repository.getActivitiesByScheduleId(widget.schedule.id!);
+      final activities = await repository.getActivitiesByScheduleId(_currentSchedule.id!);
       
       // Count activities per day
       final activitiesByDay = List.filled(7, 0);
@@ -65,11 +86,13 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
         }
       }
       
-      setState(() {
-        _activities = activities;
-        _activitiesByDay = activitiesByDay;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _activities = activities;
+          _activitiesByDay = activitiesByDay;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       print('Error loading activities: $e');
       
@@ -87,11 +110,11 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
   
   @override
   Widget build(BuildContext context) {
-    final Color scheduleColor = Color(widget.schedule.color);
+    final Color scheduleColor = Color(_currentSchedule.color);
     
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.schedule.title),
+        title: Text(_currentSchedule.title),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -126,7 +149,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
             ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: scheduleColor,
-        onPressed: () => _navigateToAddActivity(widget.schedule),
+        onPressed: () => _navigateToAddActivity(_currentSchedule),
         child: const Icon(Icons.add),
       ),
     );
@@ -207,8 +230,8 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
                 final activity = dayActivities[index];
                 
                 // Add schedule info to the activity for display
-                activity.scheduleTitle = widget.schedule.title;
-                activity.scheduleColor = widget.schedule.color;
+                activity.scheduleTitle = _currentSchedule.title;
+                activity.scheduleColor = _currentSchedule.color;
                 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12.0),
@@ -250,11 +273,11 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () => _navigateToAddActivity(widget.schedule),
+            onPressed: () => _navigateToAddActivity(_currentSchedule),
             icon: const Icon(Icons.add),
             label: const Text('Add Activity'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(widget.schedule.color),
+              backgroundColor: Color(_currentSchedule.color),
             ),
           ),
         ],
@@ -310,7 +333,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      activity.formattedDuration,
+                      activity.formattedDuration ?? "Duration unknown",
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -416,12 +439,14 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
       context,
       MaterialPageRoute(
         builder: (context) => AddScheduleScreen(
-          schedule: widget.schedule,
+          schedule: _currentSchedule,
         ),
       ),
-    ).then((_) {
+    ).then((result) {
       // Refresh schedule and activities after editing
-      _loadActivities();
+      if (result == true) {
+        _loadActivities();
+      }
     });
   }
   
@@ -429,42 +454,29 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
     // Get the current selected day
     final dayOfWeek = _tabController.index + 1; // Convert 0-6 to 1-7
     
-    // Create a default time (current time rounded to nearest half hour)
-    final now = TimeOfDay.now();
-    final roundedMinute = (now.minute / 30).round() * 30;
-    final startTime = TimeOfDay(
-      hour: now.hour + (roundedMinute == 60 ? 1 : 0),
-      minute: roundedMinute % 60,
-    );
-    final endTime = TimeOfDay(
-      hour: (startTime.hour + 1) % 24,
-      minute: startTime.minute,
-    );
-    
-    // Create a template activity
-    final newActivity = Activity(
-      scheduleId: schedule.id!,
-      title: '',
-      dayOfWeek: dayOfWeek,
-      startTime: '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}',
-      endTime: '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}',
-      notifyBefore: 30,
-      isRecurring: 1,
-      createdAt: DateTime.now().toIso8601String(),
-      updatedAt: DateTime.now().toIso8601String(),
-    );
-    
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddActivityScreen(
           schedule: schedule,
-          activity: newActivity,
+          activity: Activity(
+            scheduleId: schedule.id!,
+            title: '',
+            dayOfWeek: dayOfWeek,
+            startTime: '${TimeOfDay.now().hour.toString().padLeft(2, '0')}:${TimeOfDay.now().minute.toString().padLeft(2, '0')}',
+            endTime: '${(TimeOfDay.now().hour + 1).toString().padLeft(2, '0')}:${TimeOfDay.now().minute.toString().padLeft(2, '0')}',
+            notifyBefore: 30,
+            isRecurring: 1,
+            createdAt: DateTime.now().toIso8601String(),
+            updatedAt: DateTime.now().toIso8601String(),
+          ),
         ),
       ),
-    ).then((_) {
-      // Refresh activities after adding new one
-      _loadActivities();
+    ).then((result) {
+      // Refresh activities after adding/updating
+      if (result == true) {
+        _loadActivities();
+      }
     });
   }
   
@@ -473,13 +485,15 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
       context,
       MaterialPageRoute(
         builder: (context) => AddActivityScreen(
-          schedule: widget.schedule,
+          schedule: _currentSchedule,
           activity: activity,
         ),
       ),
-    ).then((_) {
+    ).then((result) {
       // Refresh activities after editing
-      _loadActivities();
+      if (result == true) {
+        _loadActivities();
+      }
     });
   }
 }
