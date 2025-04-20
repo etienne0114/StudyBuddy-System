@@ -3,24 +3,12 @@ import 'package:study_scheduler/utils/logger.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:dio/dio.dart';
-import 'package:study_scheduler/data/database/database_helper.dart';
-
-class AIServiceException implements Exception {
-  final String message;
-  AIServiceException(this.message);
-  
-  @override
-  String toString() => message;
-}
 
 class AIService {
   static final AIService _instance = AIService._internal();
   factory AIService() => _instance;
   AIService._internal();
 
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
-  final Dio _dio = Dio();
   bool _isInitialized = false;
   String? _openAIKey;
   String? _anthropicKey;
@@ -29,80 +17,26 @@ class AIService {
   static const String _openAIEndpoint = 'https://api.openai.com/v1/chat/completions';
   static const String _claudeEndpoint = 'https://api.anthropic.com/v1/messages';
   
-  bool get isInitialized => _isInitialized;
-  
   // Initialize the service with API keys
   Future<void> initialize() async {
-    if (_isInitialized) return;
-    
     try {
       await dotenv.load(fileName: ".env");
-      _openAIKey = dotenv.env['OPENAI_API_KEY']?.trim();
-      _anthropicKey = dotenv.env['ANTHROPIC_API_KEY']?.trim();
+      _openAIKey = dotenv.env['OPENAI_API_KEY'];
+      _anthropicKey = dotenv.env['ANTHROPIC_API_KEY'];
       
       if (_openAIKey == null || _anthropicKey == null) {
-        throw AIServiceException('API keys not found. Please check your .env file.');
+        throw NotInitializedError('API keys not found in environment variables');
       }
       
-      if (_openAIKey!.isEmpty || _anthropicKey!.isEmpty ||
-          _openAIKey!.contains('your_') || _anthropicKey!.contains('your_')) {
-        throw AIServiceException('Please replace the placeholder API keys with actual keys in your .env file.');
+      if (_openAIKey!.contains('your_openai_api_key_here') || 
+          _anthropicKey!.contains('your_anthropic_api_key_here')) {
+        throw NotInitializedError('Please replace the placeholder API keys with actual keys');
       }
-      
-      // Validate API keys with a test request
-      await _validateAPIKeys();
       
       _isInitialized = true;
-      Logger.info('AI Service initialized successfully');
     } catch (e) {
       _isInitialized = false;
-      Logger.error('Failed to initialize AI service: $e');
-      throw AIServiceException('Failed to initialize AI service. Please check your API keys.');
-    }
-  }
-
-  Future<void> _validateAPIKeys() async {
-    try {
-      // Test OpenAI API
-      final openAIResponse = await http.post(
-        Uri.parse(_openAIEndpoint),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_openAIKey',
-        },
-        body: jsonEncode({
-          'model': 'gpt-4-turbo-preview',
-          'messages': [{'role': 'user', 'content': 'test'}],
-          'max_tokens': 1
-        }),
-      );
-
-      if (openAIResponse.statusCode != 200) {
-        throw AIServiceException('OpenAI API key validation failed. Please check your API key.');
-      }
-
-      // Test Claude API
-      final claudeResponse = await http.post(
-        Uri.parse(_claudeEndpoint),
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': _anthropicKey!,
-          'anthropic-version': '2023-06-01',
-        },
-        body: jsonEncode({
-          'model': 'claude-3-opus-20240229',
-          'max_tokens': 1,
-          'messages': [
-            {'role': 'user', 'content': 'test'},
-          ],
-        }),
-      );
-
-      if (claudeResponse.statusCode != 200) {
-        throw AIServiceException('Claude API key validation failed. Please check your API key.');
-      }
-    } catch (e) {
-      throw AIServiceException('API key validation failed. Please check your internet connection and API keys.');
+      throw NotInitializedError('Failed to initialize AI service: $e');
     }
   }
   
@@ -115,32 +49,33 @@ class AIService {
       try {
         await initialize();
       } catch (e) {
-        return 'Configuration Error: Please ensure your API keys are properly set up in the .env file.';
+        return 'I apologize, but I\'m not properly configured yet. Please make sure the API keys are set up correctly in the .env file.';
       }
     }
 
     try {
-      final response = switch (model.toLowerCase()) {
-        'gpt-4' => await _getOpenAIResponse(question, material),
-        'claude' => await _getClaudeResponse(question, material),
-        'study assistant' => await _getStudyAssistantResponse(question, material),
-        _ => await _getOpenAIResponse(question, material),
-      };
-      
-      Logger.info('AI response generated successfully for model: $model');
-      return response;
-    } catch (e) {
-      Logger.error('Error in AIService.getResponse: $e');
-      if (e is AIServiceException) {
-        return 'Error: ${e.message}';
+      switch (model.toLowerCase()) {
+        case 'gpt-4':
+          return await _getOpenAIResponse(question, material);
+        case 'claude':
+          return await _getClaudeResponse(question, material);
+        case 'study assistant':
+          return await _getStudyAssistantResponse(question, material);
+        default:
+          return await _getOpenAIResponse(question, material);
       }
-      return 'Sorry, I encountered an error. Please try again later.';
+    } catch (e) {
+      if (e is NotInitializedError) {
+        return 'Configuration Error: ${e.message}\n\nPlease ensure your API keys are properly set up in the .env file.';
+      }
+      Logger.error('Error in AIService.getResponse: $e');
+      throw Exception('Failed to get AI response: $e');
     }
   }
 
   Future<String> _getOpenAIResponse(String question, StudyMaterial? material) async {
     if (_openAIKey == null || _openAIKey!.isEmpty) {
-      throw AIServiceException('OpenAI API key not configured');
+      throw NotInitializedError('OpenAI API key not configured');
     }
 
     try {
@@ -165,7 +100,7 @@ class AIService {
         return data['choices'][0]['message']['content'] as String;
       } else {
         final error = jsonDecode(response.body);
-        throw AIServiceException('OpenAI API error: ${error['error']['message'] ?? response.statusCode}');
+        throw Exception('OpenAI API error: ${error['error']['message'] ?? response.statusCode}');
       }
     } catch (e) {
       Logger.error('Error in _getOpenAIResponse: $e');
@@ -175,7 +110,7 @@ class AIService {
 
   Future<String> _getClaudeResponse(String question, StudyMaterial? material) async {
     if (_anthropicKey == null || _anthropicKey!.isEmpty) {
-      throw AIServiceException('Anthropic API key not configured');
+      throw NotInitializedError('Anthropic API key not configured');
     }
 
     try {
@@ -209,7 +144,7 @@ class AIService {
         return data['content'][0]['text'] as String;
       } else {
         final error = jsonDecode(response.body);
-        throw AIServiceException('Claude API error: ${error['error']['message'] ?? response.statusCode}');
+        throw Exception('Claude API error: ${error['error']['message'] ?? response.statusCode}');
       }
     } catch (e) {
       Logger.error('Error in _getClaudeResponse: $e');
@@ -240,7 +175,7 @@ class AIService {
         final data = jsonDecode(response.body);
         return data['choices'][0]['message']['content'] as String;
       } else {
-        throw AIServiceException('API error: ${response.statusCode}');
+        throw Exception('API error: ${response.statusCode}');
       }
     } catch (e) {
       Logger.error('Error in _getStudyAssistantResponse: $e');
@@ -435,35 +370,19 @@ Include a mix of:
         
         return questions;
       } else {
-        throw AIServiceException('Failed to generate questions: ${response.statusCode}');
+        throw Exception('Failed to generate questions: ${response.statusCode}');
       }
     } catch (e) {
       Logger.error('Error in AIService.getPracticeQuestions: $e');
       rethrow;
     }
   }
+}
 
-  Future<void> _trackUsage({
-    required String service,
-    required String query,
-    required String response,
-    required int tokensUsed,
-    required int durationMs,
-    required bool success,
-  }) async {
-    try {
-      final db = await _dbHelper.database;
-      await db.insert('ai_usage_tracking', {
-        'service_name': service,
-        'query': query,
-        'response': response,
-        'tokens_used': tokensUsed,
-        'duration_ms': durationMs,
-        'success': success ? 1 : 0,
-        'created_at': DateTime.now().toIso8601String(),
-      });
-    } catch (e) {
-      Logger.error('Error tracking AI usage: $e');
-    }
-  }
+class NotInitializedError extends Error {
+  final String message;
+  NotInitializedError(this.message);
+  
+  @override
+  String toString() => message;
 }

@@ -10,7 +10,7 @@ import 'package:study_scheduler/constants/app_colors.dart';
 import 'package:study_scheduler/utils/validators.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  const RegisterScreen({Key? key}) : super(key: key);
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();

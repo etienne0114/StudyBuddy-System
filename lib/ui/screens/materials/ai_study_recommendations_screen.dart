@@ -8,7 +8,7 @@ import 'package:study_scheduler/helpers/ai_helper.dart';
 import 'package:study_scheduler/ui/screens/materials/material_detail_screen.dart';
 
 class AIStudyRecommendationsScreen extends StatefulWidget {
-  const AIStudyRecommendationsScreen({super.key});
+  const AIStudyRecommendationsScreen({Key? key}) : super(key: key);
 
   @override
   State<AIStudyRecommendationsScreen> createState() => _AIStudyRecommendationsScreenState();

@@ -23,7 +23,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -232,9 +232,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 20),
-                        const Text(
+                        Text(
                           'Welcome Back!',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -592,7 +592,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: Text(
                   material.category,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     color: AppColors.primary,
                     fontWeight: FontWeight.w500,
@@ -1245,7 +1245,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Text(
                         material.category,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: AppColors.primary,
                           fontWeight: FontWeight.w500,

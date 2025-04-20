@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:study_scheduler/constants/app_colors.dart';
 import 'package:study_scheduler/constants/app_styles.dart';
 import 'package:study_scheduler/data/models/study_material.dart';
 import 'package:study_scheduler/data/repositories/study_materials_repository.dart';
@@ -7,7 +8,7 @@ import 'package:study_scheduler/utils/logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AddMaterialScreen extends StatefulWidget {
-  const AddMaterialScreen({super.key});
+  const AddMaterialScreen({Key? key}) : super(key: key);
 
   @override
   State<AddMaterialScreen> createState() => _AddMaterialScreenState();

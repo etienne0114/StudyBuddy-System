@@ -23,7 +23,7 @@ class CustomTextField extends StatelessWidget {
   final EdgeInsets contentPadding;
 
   const CustomTextField({
-    super.key,
+    Key? key,
     required this.controller,
     required this.label,
     this.hint,
@@ -44,7 +44,7 @@ class CustomTextField extends StatelessWidget {
       horizontal: 16.0,
       vertical: 16.0,
     ),
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

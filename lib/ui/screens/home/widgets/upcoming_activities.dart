@@ -17,10 +17,10 @@ class UpcomingActivities extends StatelessWidget {
   final Function(Activity)? onActivityTap;
 
   const UpcomingActivities({
-    super.key,
+    Key? key,
     required this.activities,
     this.onActivityTap,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

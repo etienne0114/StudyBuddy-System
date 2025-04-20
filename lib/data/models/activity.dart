@@ -13,8 +13,8 @@ class Activity {
   final String endTime;
   final int notifyBefore;
   final int isRecurring;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final String createdAt;
+  final String updatedAt;
   
   // Non-database properties for UI
   String? scheduleTitle;
@@ -29,8 +29,8 @@ class Activity {
     required this.dayOfWeek,
     required this.startTime,
     required this.endTime,
-    required this.notifyBefore,
-    required this.isRecurring,
+    this.notifyBefore = 30,
+    this.isRecurring = 1,
     required this.createdAt,
     required this.updatedAt,
     this.scheduleTitle,
@@ -40,17 +40,17 @@ class Activity {
   factory Activity.fromMap(Map<String, dynamic> map) {
     return Activity(
       id: map['id'] as int?,
-      scheduleId: map['schedule_id'] as int,
+      scheduleId: map['scheduleId'] as int,
       title: map['title'] as String,
       description: map['description'] as String?,
       location: map['location'] as String?,
-      dayOfWeek: map['day_of_week'] as int,
-      startTime: map['start_time'] as String,
-      endTime: map['end_time'] as String,
-      notifyBefore: map['notify_before'] as int,
-      isRecurring: map['is_recurring'] as int,
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
+      dayOfWeek: map['dayOfWeek'] as int,
+      startTime: map['startTime'] as String,
+      endTime: map['endTime'] as String,
+      notifyBefore: map['notifyBefore'] as int? ?? 30,
+      isRecurring: map['isRecurring'] as int? ?? 1,
+      createdAt: map['createdAt'] as String,
+      updatedAt: map['updatedAt'] as String,
       scheduleTitle: map['scheduleTitle'] as String?,
       scheduleColor: map['scheduleColor'] as int?,
     );
@@ -58,18 +58,18 @@ class Activity {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'schedule_id': scheduleId,
+      if (id != null) 'id': id,
+      'scheduleId': scheduleId,
       'title': title,
       'description': description,
       'location': location,
-      'day_of_week': dayOfWeek,
-      'start_time': startTime,
-      'end_time': endTime,
-      'notify_before': notifyBefore,
-      'is_recurring': isRecurring,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'dayOfWeek': dayOfWeek,
+      'startTime': startTime,
+      'endTime': endTime,
+      'notifyBefore': notifyBefore,
+      'isRecurring': isRecurring,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
     };
   }
 
@@ -84,8 +84,8 @@ class Activity {
     String? endTime,
     int? notifyBefore,
     int? isRecurring,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    String? createdAt,
+    String? updatedAt,
   }) {
     return Activity(
       id: id ?? this.id,

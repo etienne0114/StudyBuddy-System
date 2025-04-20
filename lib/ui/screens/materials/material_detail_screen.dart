@@ -12,9 +12,9 @@ class MaterialDetailScreen extends StatefulWidget {
   final StudyMaterial material;
 
   const MaterialDetailScreen({
-    super.key,
+    Key? key,
     required this.material,
-  });
+  }) : super(key: key);
 
   @override
   State<MaterialDetailScreen> createState() => _MaterialDetailScreenState();

@@ -9,9 +9,9 @@ class CompactAIAssistantDialog extends StatefulWidget {
   final StudyMaterial? material;
 
   const CompactAIAssistantDialog({
-    super.key,
+    Key? key,
     this.material,
-  });
+  }) : super(key: key);
 
   @override
   State<CompactAIAssistantDialog> createState() => _CompactAIAssistantDialogState();
@@ -270,8 +270,9 @@ class _MessageBubble extends StatelessWidget {
   final Message message;
 
   const _MessageBubble({
+    Key? key,
     required this.message,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

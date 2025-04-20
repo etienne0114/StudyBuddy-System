@@ -1,22 +1,22 @@
 // lib/ui/screens/schedule/add_activity_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:study_scheduler/data/models/activity.dart';
 import 'package:study_scheduler/data/models/schedule.dart';
+import 'package:study_scheduler/data/repositories/schedule_repository.dart';
 import 'package:study_scheduler/ui/widgets/custom_button.dart';
 import 'package:study_scheduler/ui/widgets/custom_textfield.dart';
-import 'package:study_scheduler/data/database/database_helper.dart';
-import 'package:study_scheduler/utils/logger.dart';
 
 class AddActivityScreen extends StatefulWidget {
   final Schedule schedule;
   final Activity? activity; // Optional for editing existing activity
 
   const AddActivityScreen({
-    super.key,
+    Key? key,
     required this.schedule,
     this.activity,
-  });
+  }) : super(key: key);
 
   @override
   State<AddActivityScreen> createState() => _AddActivityScreenState();
@@ -111,37 +111,43 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final now = DateTime.now();
       final activity = Activity(
         id: widget.activity?.id,
         scheduleId: widget.schedule.id!,
         title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        location: _locationController.text.isEmpty ? null : _locationController.text,
+        description: _descriptionController.text.trim().isNotEmpty 
+            ? _descriptionController.text.trim() 
+            : null,
+        location: _locationController.text.trim().isNotEmpty 
+            ? _locationController.text.trim() 
+            : null,
         dayOfWeek: _selectedDay,
         startTime: _timeOfDayToString(_startTime),
         endTime: _timeOfDayToString(_endTime),
         notifyBefore: _notifyBefore,
         isRecurring: _isRecurring ? 1 : 0,
-        createdAt: widget.activity?.createdAt ?? now,
-        updatedAt: now,
+        createdAt: widget.activity?.createdAt ?? DateTime.now().toIso8601String(),
+        updatedAt: DateTime.now().toIso8601String(),
       );
 
-      final dbHelper = DatabaseHelper.instance;
-      if (activity.id == null) {
-        await dbHelper.createActivity(activity);
+      final repository = Provider.of<ScheduleRepository>(context, listen: false);
+      
+      if (widget.activity == null || widget.activity!.id == null) {
+        // Create new activity
+        await repository.createActivity(activity);
       } else {
-        await dbHelper.updateActivity(activity);
+        // Update existing activity
+        await repository.updateActivity(activity);
       }
 
       if (mounted) {
-        Navigator.pop(context, true);
+        Navigator.pop(context, true); // Return true to indicate success
       }
     } catch (e) {
-      Logger.error('Error saving activity: $e');
+      print('Error saving activity: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save activity')),
+          SnackBar(content: Text('Failed to save activity: ${e.toString()}')),
         );
       }
     } finally {
@@ -153,15 +159,11 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.activity != null && widget.activity!.id != null;
+    
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.activity == null ? 'Add Activity' : 'Edit Activity'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _saveActivity,
-          ),
-        ],
+        title: Text(isEditing ? 'Edit Activity' : 'Add Activity'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -177,7 +179,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
                       label: 'Title',
                       hint: 'Enter activity title',
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
+                        if (value == null || value.isEmpty) {
                           return 'Please enter a title';
                         }
                         return null;
@@ -295,7 +297,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
                     ),
                     const SizedBox(height: 32),
                     CustomButton(
-                      text: widget.activity == null ? 'Add Activity' : 'Save Changes',
+                      text: isEditing ? 'Save Changes' : 'Add Activity',
                       onPressed: _saveActivity,
                     ),
                   ],

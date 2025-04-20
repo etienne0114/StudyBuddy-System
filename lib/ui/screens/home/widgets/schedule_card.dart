@@ -6,10 +6,10 @@ class ScheduleCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const ScheduleCard({
-    super.key,
+    Key? key,
     required this.schedule,
     this.onTap,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

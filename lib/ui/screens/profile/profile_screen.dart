@@ -7,7 +7,7 @@ import 'package:study_scheduler/services/auth_service.dart';
 import 'package:study_scheduler/ui/screens/auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({Key? key}) : super(key: key);
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();

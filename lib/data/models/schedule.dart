@@ -7,14 +7,16 @@ class Schedule {
   final String title;
   final String? description;
   final int color;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final int isActive; // 1 = active, 0 = inactive
+  final String createdAt;
+  final String updatedAt;
 
   Schedule({
     this.id,
     required this.title,
     this.description,
     required this.color,
+    this.isActive = 1,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -23,7 +25,7 @@ class Schedule {
   Color get scheduleColor => Color(color);
   
   // Check if schedule is active
-  bool get isActiveFlag => true; // Assuming the schedule is always active
+  bool get isActiveFlag => isActive == 1;
 
   // Create a copy of this Schedule with some fields replaced
   Schedule copyWith({
@@ -31,14 +33,16 @@ class Schedule {
     String? title,
     String? description,
     int? color,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    bool? isActive,
+    String? createdAt,
+    String? updatedAt,
   }) {
     return Schedule(
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
       color: color ?? this.color,
+      isActive: isActive != null ? (isActive ? 1 : 0) : this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -47,29 +51,31 @@ class Schedule {
   // Convert a Schedule into a Map
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      if (id != null) 'id': id,
       'title': title,
       'description': description,
       'color': color,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'isActive': isActive,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
     };
   }
 
   // Create a Schedule from a Map
   factory Schedule.fromMap(Map<String, dynamic> map) {
     return Schedule(
-      id: map['id'] as int?,
-      title: map['title'] as String,
-      description: map['description'] as String?,
-      color: map['color'] as int,
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
+      id: map['id'],
+      title: map['title'],
+      description: map['description'],
+      color: map['color'],
+      isActive: map['isActive'] ?? 1,
+      createdAt: map['createdAt'],
+      updatedAt: map['updatedAt'],
     );
   }
 
   @override
   String toString() {
-    return 'Schedule{id: $id, title: $title, color: $color, isActive: $isActiveFlag}';
+    return 'Schedule{id: $id, title: $title, color: $color, isActive: $isActive}';
   }
 }

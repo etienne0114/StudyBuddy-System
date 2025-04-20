@@ -10,7 +10,7 @@ import 'package:study_scheduler/ui/screens/onboarding/onboarding_screen.dart';
 import 'package:study_scheduler/utils/logger.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  const SplashScreen({Key? key}) : super(key: key);
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();

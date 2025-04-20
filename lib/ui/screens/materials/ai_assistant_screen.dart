@@ -6,9 +6,9 @@ class AIAssistantScreen extends StatefulWidget {
   final StudyMaterial material;
 
   const AIAssistantScreen({
-    super.key,
+    Key? key,
     required this.material,
-  });
+  }) : super(key: key);
 
   @override
   State<AIAssistantScreen> createState() => _AIAssistantScreenState();
@@ -21,7 +21,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
   
   bool _isLoading = false;
   String _response = '';
-  final List<Map<String, String>> _chatHistory = [];
+  List<Map<String, String>> _chatHistory = [];
 
   @override
   void dispose() {
@@ -74,7 +74,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: \${e.toString()}')),
+        SnackBar(content: Text('Error: \${e.toString()}')),
       );
     } finally {
       setState(() {
@@ -97,16 +97,27 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
     // Generate response based on query type
     if (query.toLowerCase().contains('summarize') || 
         query.toLowerCase().contains('summary')) {
-      return 'Here\'s a summary of ${widget.material.title}:\n\n' 'This is a ${widget.material.category.toLowerCase()} about ${widget.material.title}. ' 'The main points include understanding key concepts and practical applications.';
+      return 'Here\'s a summary of ${widget.material.title}:\n\n' +
+             'This is a ${widget.material.category.toLowerCase()} about ${widget.material.title}. ' +
+             'The main points include understanding key concepts and practical applications.';
     } else if (query.toLowerCase().contains('practice') || 
                query.toLowerCase().contains('question')) {
-      return 'Here are some practice questions about ${widget.material.title}:\n\n' '1. What are the key concepts covered in this material?\n' '2. How would you apply these concepts in practice?\n' '3. Can you explain the relationship between different topics?';
+      return 'Here are some practice questions about ${widget.material.title}:\n\n' +
+             '1. What are the key concepts covered in this material?\n' +
+             '2. How would you apply these concepts in practice?\n' +
+             '3. Can you explain the relationship between different topics?';
     } else if (query.toLowerCase().contains('study plan') || 
                query.toLowerCase().contains('schedule')) {
-      return 'Here\'s a suggested study plan for ${widget.material.title}:\n\n' '1. Review the basic concepts (30 minutes)\n' '2. Work through examples (45 minutes)\n' '3. Practice exercises (45 minutes)\n' +
+      return 'Here\'s a suggested study plan for ${widget.material.title}:\n\n' +
+             '1. Review the basic concepts (30 minutes)\n' +
+             '2. Work through examples (45 minutes)\n' +
+             '3. Practice exercises (45 minutes)\n' +
              '4. Review and summarize (30 minutes)';
     } else {
-      return 'I understand you\'re asking about ${widget.material.title}. ' 'Could you please be more specific about what you\'d like to know? ' 'I can help with:\n\n' '• Summarizing the content\n' +
+      return 'I understand you\'re asking about ${widget.material.title}. ' +
+             'Could you please be more specific about what you\'d like to know? ' +
+             'I can help with:\n\n' +
+             '• Summarizing the content\n' +
              '• Creating practice questions\n' +
              '• Making a study plan\n' +
              '• Explaining specific concepts';

@@ -3,108 +3,128 @@
 import 'package:flutter/material.dart';
 
 class AIService {
-  static const String openai = 'openai';
-  static const String claude = 'claude';
-
-  static const List<String> availableServices = [openai, claude];
-
-  static const Color openaiColor = Color(0xFF10A37F);
-  static const Color claudeColor = Color(0xFF6B46C1);
-  static const Color defaultColor = Color(0xFF6200EE);
-
   final String name;
-  final String apiKey;
-  final bool isEnabled;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final String description;
+  final Color color;
+  final List<String> capabilities;
+  final bool isAvailable;
+  final String apiEndpoint;
+  final Map<String, dynamic> settings;
 
-  AIService({
+  const AIService({
     required this.name,
-    required this.apiKey,
-    required this.isEnabled,
-    required this.createdAt,
-    required this.updatedAt,
+    required this.description,
+    required this.color,
+    required this.capabilities,
+    required this.isAvailable,
+    required this.apiEndpoint,
+    required this.settings,
   });
-
-  factory AIService.fromMap(Map<String, dynamic> map) {
-    return AIService(
-      name: map['service_name'] as String,
-      apiKey: map['api_key'] as String,
-      isEnabled: map['is_enabled'] == 1,
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'service_name': name,
-      'api_key': apiKey,
-      'is_enabled': isEnabled ? 1 : 0,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-    };
-  }
-
-  AIService copyWith({
-    String? name,
-    String? apiKey,
-    bool? isEnabled,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    return AIService(
-      name: name ?? this.name,
-      apiKey: apiKey ?? this.apiKey,
-      isEnabled: isEnabled ?? this.isEnabled,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
 
   static List<AIService> getAllServices() {
     return [
-      const AIService(
+      AIService(
         name: 'Claude',
-        apiKey: 'claude-api-key',
-        isEnabled: true,
-        createdAt: DateTime(2024, 2, 29),
-        updatedAt: DateTime(2024, 2, 29),
+        description: 'Advanced AI assistant for study planning and material analysis',
+        color: Colors.purple,
+        capabilities: [
+          'Study Planning',
+          'Material Analysis',
+          'Question Answering',
+          'Schedule Optimization',
+          'Learning Path Generation'
+        ],
+        isAvailable: true,
+        apiEndpoint: 'https://api.anthropic.com/v1/messages',
+        settings: {
+          'model': 'claude-3-opus-20240229',
+          'max_tokens': 4000,
+        },
       ),
-      const AIService(
+      AIService(
         name: 'GPT-4',
-        apiKey: 'gpt-4-api-key',
-        isEnabled: true,
-        createdAt: DateTime(2024, 2, 29),
-        updatedAt: DateTime(2024, 2, 29),
+        description: 'Powerful language model for comprehensive study assistance',
+        color: Colors.green,
+        capabilities: [
+          'Content Generation',
+          'Study Planning',
+          'Material Analysis',
+          'Quiz Generation'
+        ],
+        isAvailable: true,
+        apiEndpoint: 'https://api.openai.com/v1/chat/completions',
+        settings: {
+          'model': 'gpt-4-turbo-preview',
+          'max_tokens': 4000,
+        },
       ),
-      const AIService(
+      AIService(
         name: 'Study Assistant',
-        apiKey: 'study-assistant-api-key',
-        isEnabled: true,
-        createdAt: DateTime(2024, 2, 29),
-        updatedAt: DateTime(2024, 2, 29),
+        description: 'Specialized AI for study material organization and planning',
+        color: Colors.blue,
+        capabilities: [
+          'Material Organization',
+          'Study Planning',
+          'Progress Tracking',
+          'Recommendation Engine'
+        ],
+        isAvailable: true,
+        apiEndpoint: 'https://api.study-assistant.com/v1',
+        settings: {
+          'model': 'study-assistant-v2',
+          'max_tokens': 2000,
+        },
       ),
-      const AIService(
+      AIService(
         name: 'Perplexity',
-        apiKey: 'perplexity-api-key',
-        isEnabled: true,
-        createdAt: DateTime(2024, 2, 29),
-        updatedAt: DateTime(2024, 2, 29),
+        description: 'Research-focused AI for deep learning and analysis',
+        color: Colors.orange,
+        capabilities: [
+          'Research',
+          'Deep Learning',
+          'Content Analysis',
+          'Source Verification'
+        ],
+        isAvailable: true,
+        apiEndpoint: 'https://api.perplexity.ai/v1',
+        settings: {
+          'model': 'perplexity-pro',
+          'max_tokens': 3000,
+        },
       ),
-      const AIService(
+      AIService(
         name: 'DeepSeek',
-        apiKey: 'deepseek-api-key',
-        isEnabled: true,
-        createdAt: DateTime(2024, 2, 29),
-        updatedAt: DateTime(2024, 2, 29),
+        description: 'Advanced AI for technical and scientific study materials',
+        color: Colors.indigo,
+        capabilities: [
+          'Technical Analysis',
+          'Scientific Research',
+          'Code Understanding',
+          'Problem Solving'
+        ],
+        isAvailable: true,
+        apiEndpoint: 'https://api.deepseek.com/v1',
+        settings: {
+          'model': 'deepseek-coder',
+          'max_tokens': 4000,
+        },
       ),
-      const AIService(
+      AIService(
         name: 'You',
-        apiKey: 'you-api-key',
-        isEnabled: true,
-        createdAt: DateTime(2024, 2, 29),
-        updatedAt: DateTime(2024, 2, 29),
+        description: 'Personalized AI tutor for adaptive learning',
+        color: Colors.teal,
+        capabilities: [
+          'Personalized Learning',
+          'Adaptive Teaching',
+          'Progress Tracking',
+          'Study Recommendations'
+        ],
+        isAvailable: true,
+        apiEndpoint: 'https://api.you.com/v1',
+        settings: {
+          'model': 'you-tutor-v1',
+          'max_tokens': 3000,
+        },
       ),
     ];
   }
@@ -117,8 +137,31 @@ class AIService {
   }
 
   bool hasCapability(String capability) {
-    // Implementation of hasCapability method
-    return false; // Placeholder return, actual implementation needed
+    return capabilities.contains(capability);
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'description': description,
+      'color': color.value,
+      'capabilities': capabilities,
+      'isAvailable': isAvailable,
+      'apiEndpoint': apiEndpoint,
+      'settings': settings,
+    };
+  }
+
+  factory AIService.fromMap(Map<String, dynamic> map) {
+    return AIService(
+      name: map['name'] as String,
+      description: map['description'] as String,
+      color: Color(map['color'] as int),
+      capabilities: List<String>.from(map['capabilities'] as List),
+      isAvailable: map['isAvailable'] as bool,
+      apiEndpoint: map['apiEndpoint'] as String,
+      settings: Map<String, dynamic>.from(map['settings'] as Map),
+    );
   }
 
   String getSimulatedResponse(String query) {

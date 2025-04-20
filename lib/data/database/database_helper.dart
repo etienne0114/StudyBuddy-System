@@ -7,8 +7,6 @@ import 'package:study_scheduler/data/models/activity.dart';
 import 'package:study_scheduler/data/models/schedule.dart';
 import 'package:study_scheduler/data/models/study_material.dart';
 import 'package:flutter/foundation.dart'; // Add this import for kDebugMode
-import 'package:study_scheduler/utils/logger.dart';
-import 'package:study_scheduler/constants/app_constants.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -35,101 +33,42 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'study_scheduler.db');
     return await openDatabase(
       path,
-      version: AppConstants.databaseVersion,
+      version: 3, // Increased version number for new features
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    await _createTables(db);
-  }
-
-  // Handle database upgrades with proper error handling
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    try {
-      if (oldVersion < 2) {
-        // Add study materials table
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS study_materials (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            description TEXT,
-            category TEXT NOT NULL,
-            file_path TEXT,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-          )
-        ''');
-
-        // Add AI usage tracking table
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS ai_usage_tracking (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            service_name TEXT NOT NULL,
-            query TEXT NOT NULL,
-            response TEXT NOT NULL,
-            tokens_used INTEGER NOT NULL,
-            duration_ms INTEGER NOT NULL,
-            success INTEGER NOT NULL,
-            created_at TEXT NOT NULL
-          )
-        ''');
-
-        // Add AI service preferences table
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS ai_service_preferences (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            service_name TEXT NOT NULL UNIQUE,
-            is_enabled INTEGER NOT NULL,
-            api_key TEXT,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-          )
-        ''');
-      }
-
-      if (oldVersion < 3) {
-        // Add indexes for better performance
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_activities_schedule ON activities(schedule_id)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_activities_day ON activities(day_of_week)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_ai_usage_service ON ai_usage_tracking(service_name)');
-      }
-    } catch (e) {
-      Logger.error('Error upgrading database: $e');
-      rethrow;
-    }
-  }
-
-  // Create all tables if they don't exist
-  Future<void> _createTables(Database db) async {
     // Create schedules table
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS schedules (
+      CREATE TABLE schedules(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         description TEXT,
-        color INTEGER NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        color INTEGER,
+        isActive INTEGER DEFAULT 1,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
       )
     ''');
 
     // Create activities table
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS activities (
+      CREATE TABLE activities(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        schedule_id INTEGER NOT NULL,
+        scheduleId INTEGER NOT NULL,
         title TEXT NOT NULL,
         description TEXT,
-        day_of_week INTEGER NOT NULL,
-        start_time TEXT NOT NULL,
-        end_time TEXT NOT NULL,
-        notify_before INTEGER NOT NULL,
-        is_recurring INTEGER NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY (schedule_id) REFERENCES schedules (id) ON DELETE CASCADE
+        location TEXT,
+        dayOfWeek INTEGER NOT NULL,
+        startTime TEXT NOT NULL,
+        endTime TEXT NOT NULL,
+        notifyBefore INTEGER DEFAULT 30,
+        isRecurring INTEGER DEFAULT 1,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        FOREIGN KEY (scheduleId) REFERENCES schedules (id) ON DELETE CASCADE
       )
     ''');
 
@@ -140,51 +79,68 @@ class DatabaseHelper {
         title TEXT NOT NULL,
         description TEXT,
         category TEXT NOT NULL,
-        file_path TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        filePath TEXT,
+        url TEXT,
+        fileType TEXT,
+        isOnline INTEGER DEFAULT 0,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
       )
     ''');
-
+    
     // Create AI usage tracking table
     await db.execute('''
       CREATE TABLE IF NOT EXISTS ai_usage_tracking (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        service_name TEXT NOT NULL,
-        query TEXT NOT NULL,
-        response TEXT NOT NULL,
-        tokens_used INTEGER NOT NULL,
-        duration_ms INTEGER NOT NULL,
-        success INTEGER NOT NULL,
-        created_at TEXT NOT NULL
+        materialId INTEGER,
+        aiService TEXT NOT NULL,
+        query TEXT,
+        timestamp TEXT NOT NULL,
+        FOREIGN KEY (materialId) REFERENCES study_materials (id)
       )
     ''');
 
-    // Create AI service preferences table
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS ai_service_preferences (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        service_name TEXT NOT NULL UNIQUE,
-        is_enabled INTEGER NOT NULL,
-        api_key TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      )
-    ''');
-
-    // Create indexes
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_activities_schedule ON activities(schedule_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_activities_day ON activities(day_of_week)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_ai_usage_service ON ai_usage_tracking(service_name)');
+    // Create indexes for faster queries
+    await db.execute('CREATE INDEX idx_activities_scheduleId ON activities(scheduleId)');
+    await db.execute('CREATE INDEX idx_activities_dayOfWeek ON activities(dayOfWeek)');
+    await db.execute('CREATE INDEX idx_study_materials_category ON study_materials(category)');
+    await db.execute('CREATE INDEX idx_ai_usage_materialId ON ai_usage_tracking(materialId)');
   }
 
-  Future<void> ensureAITablesExist() async {
-    try {
-      final db = await database;
-      await _createTables(db);
-    } catch (e) {
-      Logger.error('Failed to ensure AI tables exist: $e');
-      rethrow;
+  // Handle database upgrades
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Add study materials table for upgrading from version 1 to 2
+      await db.execute('''
+        CREATE TABLE study_materials(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          description TEXT,
+          category TEXT NOT NULL,
+          filePath TEXT,
+          url TEXT,
+          fileType TEXT,
+          isOnline INTEGER DEFAULT 0,
+          createdAt TEXT NOT NULL,
+          updatedAt TEXT NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX idx_study_materials_category ON study_materials(category)');
+    }
+    
+    if (oldVersion < 3) {
+      // Add AI usage tracking table for upgrading from version 2 to 3
+      await db.execute('''
+        CREATE TABLE ai_usage_tracking(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          materialId INTEGER,
+          aiService TEXT NOT NULL,
+          queryText TEXT,
+          usageDate TEXT NOT NULL,
+          FOREIGN KEY (materialId) REFERENCES study_materials (id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute('CREATE INDEX idx_ai_usage_materialId ON ai_usage_tracking(materialId)');
     }
   }
 
@@ -268,7 +224,7 @@ class DatabaseHelper {
     final Database db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'activities',
-      where: 'schedule_id = ?',
+      where: 'scheduleId = ?',
       whereArgs: [scheduleId],
     );
     return List.generate(maps.length, (i) => Activity.fromMap(maps[i]));
@@ -278,7 +234,7 @@ class DatabaseHelper {
     final Database db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'activities',
-      where: 'day_of_week = ?',
+      where: 'dayOfWeek = ?',
       whereArgs: [dayOfWeek],
     );
     return List.generate(maps.length, (i) => Activity.fromMap(maps[i]));
@@ -301,14 +257,18 @@ class DatabaseHelper {
   // Get upcoming activities for today and next days
   Future<List<Activity>> getUpcomingActivities(int dayOfWeek) async {
     final Database db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'activities',
-      where: 'day_of_week = ?',
-      whereArgs: [dayOfWeek],
-    );
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT a.*, s.title as scheduleTitle, s.color as scheduleColor
+      FROM activities a
+      JOIN schedules s ON a.scheduleId = s.id
+      WHERE a.dayOfWeek = ? AND s.isActive = 1
+      ORDER BY a.startTime ASC
+    ''', [dayOfWeek]);
     
     return List.generate(maps.length, (i) {
       Activity activity = Activity.fromMap(maps[i]);
+      activity.scheduleTitle = maps[i]['scheduleTitle'] as String;
+      activity.scheduleColor = maps[i]['scheduleColor'] as int;
       return activity;
     });
   }

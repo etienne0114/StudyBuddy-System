@@ -6,6 +6,7 @@ import 'package:study_scheduler/data/database/database_helper.dart';
 import 'package:study_scheduler/data/models/activity.dart';
 import 'package:study_scheduler/data/models/schedule.dart';
 import 'package:study_scheduler/ui/screens/schedule/add_activity_screen.dart';
+import 'package:study_scheduler/ui/screens/home/widgets/upcoming_activities.dart';
 import 'package:intl/intl.dart';
 import 'package:study_scheduler/utils/logger.dart';
 import 'package:study_scheduler/ui/screens/schedule/ai_schedule_planner_screen.dart';
@@ -33,9 +34,9 @@ class ScheduleScreen extends StatefulWidget {
   final Schedule? selectedSchedule;
 
   const ScheduleScreen({
-    super.key,
+    Key? key,
     this.selectedSchedule,
-  });
+  }) : super(key: key);
 
   @override
   State<ScheduleScreen> createState() => _ScheduleScreenState();
@@ -211,7 +212,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             color: AppColors.primary.withOpacity(0.5),
                             shape: BoxShape.circle,
                           ),
-                          selectedDecoration: const BoxDecoration(
+                          selectedDecoration: BoxDecoration(
                             color: AppColors.primary,
                             shape: BoxShape.circle,
                           ),
@@ -243,7 +244,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             color: AppColors.primary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.event_note_rounded,
                             color: AppColors.primary,
                             size: 20,
@@ -303,7 +304,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                           width: 4,
                                           height: 50,
                                           decoration: BoxDecoration(
-                                            color: Color((activity.scheduleColorValue as int?) ?? AppColors.primary.value),
+                                            color: Color(activity.scheduleColorValue ?? AppColors.primary.value),
                                             borderRadius: BorderRadius.circular(4),
                                           ),
                                         ),

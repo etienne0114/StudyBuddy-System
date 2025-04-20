@@ -8,7 +8,7 @@ import 'package:study_scheduler/ui/screens/study/ai_assistant_screen.dart';
 import 'package:study_scheduler/utils/logger.dart';
 
 class StudyMaterialsScreen extends StatefulWidget {
-  const StudyMaterialsScreen({super.key});
+  const StudyMaterialsScreen({Key? key}) : super(key: key);
 
   @override
   State<StudyMaterialsScreen> createState() => _StudyMaterialsScreenState();
@@ -68,7 +68,7 @@ class _StudyMaterialsScreenState extends State<StudyMaterialsScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const AddMaterialScreen(),
+        builder: (context) => AddMaterialScreen(),
       ),
     ).then((added) {
       if (added == true) {

@@ -9,7 +9,7 @@ import 'package:study_scheduler/ui/screens/materials/material_detail_screen.dart
 import 'package:study_scheduler/ui/screens/materials/add_material_screen.dart';
 
 class MaterialsScreen extends StatefulWidget {
-  const MaterialsScreen({super.key});
+  const MaterialsScreen({Key? key}) : super(key: key);
 
   @override
   State<MaterialsScreen> createState() => _MaterialsScreenState();

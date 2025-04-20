@@ -3,16 +3,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:study_scheduler/constants/app_colors.dart';
-import 'package:study_scheduler/constants/app_styles.dart';
 import 'package:study_scheduler/routes.dart';
 import 'package:study_scheduler/services/auth_service.dart';
 import 'package:study_scheduler/ui/screens/auth/login_screen.dart';
 import 'package:study_scheduler/ui/screens/home/home_screen.dart';
-import 'package:study_scheduler/ui/screens/schedule/schedule_screen.dart';
 
 
 class StudySchedulerApp extends StatelessWidget {
-  const StudySchedulerApp({super.key});
+  const StudySchedulerApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -20,55 +18,11 @@ class StudySchedulerApp extends StatelessWidget {
       title: 'Study Scheduler',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          primary: AppColors.primary,
-          secondary: AppColors.secondary,
-          error: AppColors.error,
-          background: AppColors.background,
-          surface: AppColors.surface,
-        ),
-        textTheme: const TextTheme(
-          displayLarge: AppStyles.heading1,
-          displayMedium: AppStyles.heading2,
-          displaySmall: AppStyles.heading3,
-          bodyLarge: AppStyles.bodyLarge,
-          bodyMedium: AppStyles.bodyMedium,
-          bodySmall: AppStyles.bodySmall,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: AppStyles.primaryButton,
-        ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: AppStyles.outlineButton,
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: AppColors.surface,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.textHint),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.textHint),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.primary),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.error),
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        ),
-        cardTheme: CardTheme(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+        primarySwatch: Colors.blue,
+        primaryColor: AppColors.primary,
+        colorScheme: ColorScheme.fromSwatch(
+          primarySwatch: Colors.blue,
+          accentColor: AppColors.accent,
         ),
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Roboto',
@@ -78,9 +32,25 @@ class StudySchedulerApp extends StatelessWidget {
           elevation: 0,
           centerTitle: true,
         ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
             foregroundColor: AppColors.primary,
+          ),
+        ),
+        cardTheme: CardTheme(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
         dialogTheme: DialogTheme(
