@@ -12,6 +12,10 @@ import 'package:study_scheduler/services/auth_service.dart';
 import 'package:study_scheduler/services/notification_service.dart';
 import 'package:study_scheduler/managers/ai_assistant_manager.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:study_scheduler/services/ai_service.dart';
+import 'package:study_scheduler/ui/screens/home/home_screen.dart';
+import 'package:study_scheduler/constants/app_theme.dart';
 
 void main() async {
   // Ensure Flutter is initialized
@@ -33,6 +37,9 @@ void main() async {
     ),
   );
   
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
+  
   // Initialize AI functionality
   try {
     // Initialize AI tables
@@ -41,6 +48,9 @@ void main() async {
     
     // Initialize AI Assistant Manager
     await AIAssistantManager.instance.initialize();
+    
+    // Initialize AI service
+    await AIService().initialize();
     
     if (kDebugMode) {
       print('AI functionality initialized successfully');
@@ -53,8 +63,20 @@ void main() async {
     // App will continue normally even if AI initialization fails
   }
   
+  // Initialize services
+  final notificationService = NotificationService();
+  await notificationService.init();
+  await notificationService.requestPermissions();
+  
+  // Initialize database
+  final dbHelper = DatabaseHelper.instance;
+  await dbHelper.database;
+  
   // Start the app
-  runApp(const AppLoader());
+  runApp(MyApp(
+    notificationService: notificationService,
+    dbHelper: dbHelper,
+  ));
 }
 
 // Widget to handle initialization and show loading state
@@ -137,6 +159,37 @@ class _AppLoaderState extends State<AppLoader> {
         Provider.value(value: _materialsRepository),
       ],
       child: const StudySchedulerApp(),
+    );
+  }
+}
+
+class MyApp extends StatelessWidget {
+  final NotificationService notificationService;
+  final DatabaseHelper dbHelper;
+
+  const MyApp({
+    Key? key,
+    required this.notificationService,
+    required this.dbHelper,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        Provider<ScheduleRepository>(
+          create: (_) => ScheduleRepository(
+            dbHelper: dbHelper,
+            notificationService: notificationService,
+          ),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Study Scheduler',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        home: const HomeScreen(),
+      ),
     );
   }
 }

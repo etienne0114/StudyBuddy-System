@@ -60,7 +60,31 @@ class StudyMaterialsRepository {
   // Add new study material
   Future<int> addMaterial(StudyMaterial material) async {
     try {
-      return await _databaseHelper.insertStudyMaterial(material);
+      // Validate required fields
+      if (material.title.isEmpty) {
+        throw Exception('Title is required');
+      }
+      
+      if (material.isOnline && (material.url == null || material.url!.isEmpty)) {
+        throw Exception('URL is required for online materials');
+      }
+      
+      if (!material.isOnline && (material.filePath == null || material.filePath!.isEmpty)) {
+        throw Exception('File path is required for local materials');
+      }
+      
+      try {
+        return await _databaseHelper.insertStudyMaterial(material);
+      } catch (e) {
+        // Check if the error is due to missing column
+        if (e.toString().contains('no column named url')) {
+          // Recreate the database to fix the schema
+          await _databaseHelper.recreateDatabase();
+          // Try again after recreating the database
+          return await _databaseHelper.insertStudyMaterial(material);
+        }
+        rethrow;
+      }
     } catch (e) {
       if (kDebugMode) {
         print('Error adding material: $e');
@@ -72,6 +96,19 @@ class StudyMaterialsRepository {
   // Update existing study material
   Future<int> updateMaterial(StudyMaterial material) async {
     try {
+      // Validate required fields
+      if (material.title.isEmpty) {
+        throw Exception('Title is required');
+      }
+      
+      if (material.isOnline && (material.url == null || material.url!.isEmpty)) {
+        throw Exception('URL is required for online materials');
+      }
+      
+      if (!material.isOnline && (material.filePath == null || material.filePath!.isEmpty)) {
+        throw Exception('File path is required for local materials');
+      }
+      
       return await _databaseHelper.updateStudyMaterial(material);
     } catch (e) {
       if (kDebugMode) {

@@ -9,6 +9,7 @@ import 'package:study_scheduler/ui/screens/schedule/add_activity_screen.dart';
 import 'package:study_scheduler/ui/screens/home/widgets/upcoming_activities.dart';
 import 'package:intl/intl.dart';
 import 'package:study_scheduler/utils/logger.dart';
+import 'package:study_scheduler/ui/screens/schedule/ai_schedule_planner_screen.dart';
 
 // Extension to convert TimeOfDay to and from string format
 extension TimeOfDayExtension on TimeOfDay {
@@ -138,124 +139,269 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Weekly Schedule'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showScheduleFilterSheet,
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-          ),
-        ],
-      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _buildCalendar(),
-                _buildScheduleHeader(),
-                Expanded(
-                  child: _activities.isEmpty
-                      ? _buildEmptyState()
-                      : _buildActivitiesList(),
+          : CustomScrollView(
+              slivers: [
+                // Custom App Bar with Gradient
+                SliverAppBar(
+                  expandedHeight: 120.0,
+                  floating: false,
+                  pinned: true,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primary,
+                            AppColors.primary.withOpacity(0.7),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  title: const Text('Weekly Schedule'),
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.auto_awesome_rounded),
+                      onPressed: _showAIPlanner,
+                      tooltip: 'AI Planner',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.filter_list_rounded),
+                      onPressed: _showScheduleFilterSheet,
+                      tooltip: 'Filter Schedules',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded),
+                      onPressed: _loadData,
+                      tooltip: 'Refresh',
+                    ),
+                  ],
+                ),
+
+                // Calendar Section
+                SliverToBoxAdapter(
+                  child: Card(
+                    margin: const EdgeInsets.all(16.0),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: TableCalendar(
+                        firstDay: DateTime.utc(2020, 1, 1),
+                        lastDay: DateTime.utc(2030, 12, 31),
+                        focusedDay: _focusedDay,
+                        calendarFormat: _calendarFormat,
+                        selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                        onDaySelected: _onDaySelected,
+                        onFormatChanged: (format) {
+                          setState(() {
+                            _calendarFormat = format;
+                          });
+                        },
+                        onPageChanged: (focusedDay) {
+                          _focusedDay = focusedDay;
+                        },
+                        calendarStyle: CalendarStyle(
+                          todayDecoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          selectedDecoration: BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          markersMaxCount: 3,
+                          outsideDaysVisible: false,
+                        ),
+                        headerStyle: const HeaderStyle(
+                          titleCentered: true,
+                          formatButtonShowsNext: false,
+                          titleTextStyle: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Schedule Header
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.event_note_rounded,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                DateFormat('EEEE, MMMM d').format(_selectedDay),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                '${_activities.length} Activities',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Activities List
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  sliver: _activities.isEmpty
+                      ? SliverFillRemaining(
+                          child: _buildEmptyState(),
+                        )
+                      : SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final activity = _activities[index];
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: InkWell(
+                                  onTap: () => _navigateToEditActivity(activity),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 4,
+                                          height: 50,
+                                          decoration: BoxDecoration(
+                                            color: Color(activity.scheduleColorValue ?? AppColors.primary.value),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                activity.title,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '${activity.formattedStartTime} - ${activity.formattedEndTime}',
+                                                style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.edit_rounded),
+                                          onPressed: () => _navigateToEditActivity(activity),
+                                          color: Colors.grey[600],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            childCount: _activities.length,
+                          ),
+                        ),
                 ),
               ],
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToAddActivity,
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  Widget _buildCalendar() {
-    return Card(
-      margin: const EdgeInsets.all(8.0),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TableCalendar(
-        firstDay: DateTime.utc(2020, 1, 1),
-        lastDay: DateTime.utc(2030, 12, 31),
-        focusedDay: _focusedDay,
-        calendarFormat: _calendarFormat,
-        selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-        onDaySelected: _onDaySelected,
-        onFormatChanged: (format) {
-          setState(() {
-            _calendarFormat = format;
-          });
-        },
-        onPageChanged: (focusedDay) {
-          _focusedDay = focusedDay;
-        },
-        calendarStyle: CalendarStyle(
-          todayDecoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.5),
-            shape: BoxShape.circle,
-          ),
-          selectedDecoration: const BoxDecoration(
-            color: AppColors.primary,
-            shape: BoxShape.circle,
-          ),
-          markersMaxCount: 3,
-        ),
-        headerStyle: const HeaderStyle(
-          titleCentered: true,
-          formatButtonShowsNext: false,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildScheduleHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            DateFormat('EEEE, MMMM d').format(_selectedDay),
-            style: AppStyles.heading2,
-          ),
-          Text(
-            '${_activities.length} Activities',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivitiesList() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: UpcomingActivities(
-        activities: _activities,
-        onActivityTap: (activity) {
-          _navigateToEditActivity(activity);
-        },
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add_rounded),
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return AppStyles.buildEmptyState(
-      icon: Icons.event_busy,
-      message: 'No activities scheduled',
-      subMessage: 'Add activities to your schedule for this day',
-      actionButton: ElevatedButton.icon(
-        onPressed: _navigateToAddActivity,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Activity'),
-        style: AppStyles.primaryButtonStyle,
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.event_busy_rounded,
+            size: 80,
+            color: Colors.grey[300],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No Activities Scheduled',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add activities to your schedule for this day',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: _navigateToAddActivity,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Add Activity'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -404,6 +550,31 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           },
         );
       },
+    );
+  }
+
+  void _showAIPlanner() {
+    if (_selectedScheduleId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a schedule first'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final selectedSchedule = _schedules.firstWhere(
+      (schedule) => schedule.id == _selectedScheduleId,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AISchedulePlannerScreen(
+          schedule: selectedSchedule,
+        ),
+      ),
     );
   }
 }

@@ -93,12 +93,15 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredMaterials.isEmpty
                     ? _buildEmptyState()
-                    : ListView.builder(
-                        itemCount: _filteredMaterials.length,
-                        itemBuilder: (context, index) {
-                          final material = _filteredMaterials[index];
-                          return _buildMaterialCard(material);
-                        },
+                    : RefreshIndicator(
+                        onRefresh: _loadMaterials,
+                        child: ListView.builder(
+                          itemCount: _filteredMaterials.length,
+                          itemBuilder: (context, index) {
+                            final material = _filteredMaterials[index];
+                            return _buildMaterialCard(material);
+                          },
+                        ),
                       ),
           ),
         ],

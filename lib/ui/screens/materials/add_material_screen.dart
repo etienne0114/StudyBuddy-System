@@ -3,9 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:study_scheduler/data/models/study_material.dart';
 import 'package:study_scheduler/data/repositories/study_materials_repository.dart';
-// We'll implement a simpler version without third-party dependencies
-// import 'package:image_picker/image_picker.dart';
-// import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
 class AddMaterialScreen extends StatefulWidget {
@@ -57,8 +55,8 @@ class _AddMaterialScreenState extends State<AddMaterialScreen> {
       _selectedCategory = widget.material!.category;
       _isOnline = widget.material!.isOnline;
       
-      if (widget.material!.fileUrl != null) {
-        _fileUrlController.text = widget.material!.fileUrl!;
+      if (widget.material!.url != null) {
+        _fileUrlController.text = widget.material!.url!;
       }
       
       _filePath = widget.material!.filePath;
@@ -74,22 +72,28 @@ class _AddMaterialScreenState extends State<AddMaterialScreen> {
     super.dispose();
   }
 
-  // Simplified file picking for demo purposes
   Future<void> _pickFile() async {
     try {
-      // Instead of using actual file picker, we'll simulate it
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      setState(() {
-        // Simulate a selected PDF file
-        _selectedFile = null; // We won't have an actual File object
-        _filePath = '/simulated/path/document.pdf';
-        _fileType = 'pdf';
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('File selected: document.pdf')),
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        allowMultiple: false,
       );
+
+      if (result != null) {
+        final file = File(result.files.single.path!);
+        final fileName = result.files.single.name;
+        final fileExtension = fileName.split('.').last.toLowerCase();
+
+        setState(() {
+          _selectedFile = file;
+          _filePath = file.path;
+          _fileType = fileExtension;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File selected: $fileName')),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error picking file: $e')),
@@ -99,19 +103,25 @@ class _AddMaterialScreenState extends State<AddMaterialScreen> {
 
   Future<void> _captureImage() async {
     try {
-      // Instead of using actual camera, we'll simulate it
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      setState(() {
-        // Simulate a captured image
-        _selectedFile = null; // We won't have an actual File object
-        _filePath = '/simulated/path/captured_image.jpg';
-        _fileType = 'jpg';
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Image captured successfully')),
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
       );
+
+      if (result != null) {
+        final file = File(result.files.single.path!);
+        final fileName = result.files.single.name;
+
+        setState(() {
+          _selectedFile = file;
+          _filePath = file.path;
+          _fileType = 'jpg';
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Image selected: $fileName')),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error capturing image: $e')),
@@ -119,72 +129,97 @@ class _AddMaterialScreenState extends State<AddMaterialScreen> {
     }
   }
 
-  Future<void> _saveMaterial() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
+  String? _validateUrl(String? value) {
+    if (_isOnline && (value == null || value.isEmpty)) {
+      return 'Please enter a URL';
     }
-    
-    // Show a loading indicator
-    setState(() {
-      _isLoading = true;
-    });
-    
-    try {
-      final now = DateTime.now().toIso8601String();
-      
-      StudyMaterial material;
-      
-      if (widget.material == null) {
-        // Create new material
-        material = StudyMaterial(
-          id: 0, // Will be set by the database
-          title: _titleController.text,
-          description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
+    if (_isOnline && value != null && value.isNotEmpty) {
+      try {
+        final uri = Uri.parse(value);
+        if (!uri.isAbsolute) {
+          return 'Please enter a valid URL';
+        }
+        if (!uri.hasScheme || (uri.scheme != 'http' && uri.scheme != 'https')) {
+          return 'URL must start with http:// or https://';
+        }
+      } catch (e) {
+        return 'Please enter a valid URL';
+      }
+    }
+    return null;
+  }
+
+  Future<void> _saveMaterial() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // Validate file selection for local files
+        if (!_isOnline && (_selectedFile == null || _filePath == null)) {
+          throw Exception('Please select a file');
+        }
+
+        // Validate URL for online materials
+        if (_isOnline && (_fileUrlController.text.isEmpty)) {
+          throw Exception('Please enter a valid URL');
+        }
+
+        final material = StudyMaterial(
+          id: widget.material?.id,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
           category: _selectedCategory,
           filePath: _isOnline ? null : _filePath,
+          url: _isOnline ? _fileUrlController.text.trim() : null,
           fileType: _fileType,
-          fileUrl: _isOnline ? _fileUrlController.text : null,
           isOnline: _isOnline,
-          createdAt: now,
-          updatedAt: now,
+          createdAt: widget.material?.createdAt ?? DateTime.now().toIso8601String(),
+          updatedAt: DateTime.now().toIso8601String(),
         );
-        
-        await _repository.addMaterial(material);
-      } else {
-        // Update existing material
-        material = StudyMaterial(
-          id: widget.material!.id,
-          title: _titleController.text,
-          description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
-          category: _selectedCategory,
-          filePath: _isOnline ? null : _filePath,
-          fileType: _fileType,
-          fileUrl: _isOnline ? _fileUrlController.text : null,
-          isOnline: _isOnline,
-          createdAt: widget.material!.createdAt,
-          updatedAt: now,
-        );
-        
-        await _repository.updateMaterial(material);
-      }
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Material saved successfully')),
-        );
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving material: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+
+        int result;
+        if (widget.material == null) {
+          result = await _repository.addMaterial(material);
+          if (result == -1) {
+            throw Exception('Failed to add material');
+          }
+        } else {
+          result = await _repository.updateMaterial(material);
+          if (result == -1) {
+            throw Exception('Failed to update material');
+          }
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                widget.material == null
+                    ? 'Material added successfully'
+                    : 'Material updated successfully',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context, true);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -296,17 +331,7 @@ class _AddMaterialScreenState extends State<AddMaterialScreen> {
                           prefixIcon: Icon(Icons.link),
                           hintText: 'https://example.com/resource',
                         ),
-                        validator: (value) {
-                          if (_isOnline) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter a URL';
-                            }
-                            if (!Uri.parse(value).isAbsolute) {
-                              return 'Please enter a valid URL';
-                            }
-                          }
-                          return null;
-                        },
+                        validator: _validateUrl,
                       ),
                     ] else ...[
                       Card(

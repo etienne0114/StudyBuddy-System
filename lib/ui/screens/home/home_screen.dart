@@ -114,46 +114,46 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Study Buddy'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () => _showNotificationSettings(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-          ),
-        ],
-      ),
       body: _buildBody(),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Schedule',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.book),
-            label: 'Materials',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: Colors.grey,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today_rounded),
+              label: 'Schedule',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.book_rounded),
+              label: 'Materials',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_rounded),
+              label: 'Profile',
+            ),
+          ],
+        ),
       ),
       floatingActionButton: _buildFloatingActionButton(),
     );
@@ -205,388 +205,403 @@ class _HomeScreenState extends State<HomeScreen> {
     
     return RefreshIndicator(
       onRefresh: _loadData,
-      child: SingleChildScrollView(
+      child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Today's date and time
-            Text(
-              dateFormatter.format(now),
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              timeFormatter.format(now),
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Today's upcoming activities
-            const Text(
-              'Upcoming Activities',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _upcomingActivities.isEmpty
-                ? _buildEmptyState(
-                    icon: Icons.event_available,
-                    message: 'No upcoming activities',
-                    subMessage: 'Enjoy your free time!',
-                  )
-                : SizedBox(
-                    height: 200,
-                    child: UpcomingActivities(
-                      activities: _upcomingActivities,
-                      onActivityTap: _navigateToActivityDetails,
-                    ),
-                  ),
-            const SizedBox(height: 24),
-            
-            // My schedules
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'My Schedules',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+        slivers: [
+          // Custom App Bar with Gradient
+          SliverAppBar(
+            expandedHeight: 200.0,
+            floating: false,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary,
+                      AppColors.primary.withOpacity(0.7),
+                    ],
                   ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentIndex = 1; // Switch to Schedule tab
-                    });
-                  },
-                  child: const Text('See All'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _allSchedules.isEmpty
-                ? _buildEmptyState(
-                    icon: Icons.calendar_today,
-                    message: 'No schedules yet',
-                    subMessage: 'Create your first schedule to get started',
-                  )
-                : SizedBox(
-                    height: 140,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _allSchedules.length > 3 ? 3 : _allSchedules.length,
-                      itemBuilder: (context, index) {
-                        final schedule = _allSchedules[index];
-                        return SizedBox(
-                          width: 180,
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 12),
-                            child: ScheduleCard(
-                              schedule: schedule,
-                              onTap: () => _navigateToScheduleDetails(schedule),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-            const SizedBox(height: 24),
-            
-            // Study Materials section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Recent Study Materials',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentIndex = 2; // Switch to Materials tab
-                    });
-                  },
-                  child: const Text('See All'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _recentMaterials.isEmpty
-                ? _buildEmptyState(
-                    icon: Icons.book,
-                    message: 'No study materials yet',
-                    subMessage: 'Add materials to start learning',
-                  )
-                : SizedBox(
-                    height: 160,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _recentMaterials.length,
-                      itemBuilder: (context, index) {
-                        final material = _recentMaterials[index];
-                        return _buildMaterialCard(material);
-                      },
-                    ),
-                  ),
-            const SizedBox(height: 24),
-            
-            // Completed activities
-            const Text(
-              'Completed Today',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _completedActivities.isEmpty
-                ? _buildEmptyState(
-                    icon: Icons.check_circle_outline,
-                    message: 'No completed activities',
-                    subMessage: 'Activities you complete will appear here',
-                  )
-                : SizedBox(
-                    height: 160,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _completedActivities.length,
-                      itemBuilder: (context, index) {
-                        final activity = _completedActivities[index];
-                        final Color scheduleColor = activity.scheduleColorValue ?? AppColors.primary;
-                        
-                        return Container(
-                          width: 180,
-                          margin: const EdgeInsets.only(right: 12),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 20),
+                        Text(
+                          'Welcome Back!',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.withAlpha(50)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withAlpha(25),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.check_circle,
-                                    color: scheduleColor,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      'Completed',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: scheduleColor,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                activity.title,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${activity.formattedStartTime} - ${activity.formattedEndTime}',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: scheduleColor.withAlpha(25),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  activity.scheduleTitle ?? 'Activity',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: scheduleColor,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          dateFormatter.format(now),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
                           ),
-                        );
-                      },
+                        ),
+                        Text(
+                          timeFormatter.format(now),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ),
+              ),
+            ),
+          ),
+
+          // Main Content
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Quick Actions
+                  _buildQuickActions(),
+                  const SizedBox(height: 24),
+
+                  // Upcoming Activities Section
+                  _buildSectionHeader(
+                    'Upcoming Activities',
+                    'Today\'s schedule',
+                    Icons.schedule_rounded,
+                  ),
+                  const SizedBox(height: 16),
+                  _upcomingActivities.isEmpty
+                      ? ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 100),
+                          child: _buildEmptyState(
+                            icon: Icons.event_available,
+                            message: 'No upcoming activities',
+                            subMessage: 'Enjoy your free time!',
+                          ),
+                        )
+                      : SizedBox(
+                          height: 180,
+                          child: UpcomingActivities(
+                            activities: _upcomingActivities,
+                            onActivityTap: _navigateToActivityDetails,
+                          ),
+                        ),
+                  const SizedBox(height: 24),
+
+                  // My Schedules Section
+                  _buildSectionHeader(
+                    'My Schedules',
+                    'Manage your time',
+                    Icons.calendar_today_rounded,
+                    action: TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _currentIndex = 1;
+                        });
+                      },
+                      child: const Text('See All'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _allSchedules.isEmpty
+                      ? ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 100),
+                          child: _buildEmptyState(
+                            icon: Icons.calendar_today,
+                            message: 'No schedules yet',
+                            subMessage: 'Create your first schedule to get started',
+                          ),
+                        )
+                      : SizedBox(
+                          height: 160,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _allSchedules.length > 3 ? 3 : _allSchedules.length,
+                            itemBuilder: (context, index) {
+                              final schedule = _allSchedules[index];
+                              return Container(
+                                width: 200,
+                                margin: const EdgeInsets.only(right: 16),
+                                child: ScheduleCard(
+                                  schedule: schedule,
+                                  onTap: () => _navigateToScheduleDetails(schedule),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                  const SizedBox(height: 24),
+
+                  // Study Materials Section
+                  _buildSectionHeader(
+                    'Recent Materials',
+                    'Continue your studies',
+                    Icons.book_rounded,
+                    action: TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _currentIndex = 2;
+                        });
+                      },
+                      child: const Text('See All'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _recentMaterials.isEmpty
+                      ? ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 100),
+                          child: _buildEmptyState(
+                            icon: Icons.book,
+                            message: 'No study materials yet',
+                            subMessage: 'Add materials to start learning',
+                          ),
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            return GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: constraints.maxWidth > 600 ? 3 : 2,
+                                childAspectRatio: 0.85,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                              ),
+                              itemCount: _recentMaterials.length > 4 ? 4 : _recentMaterials.length,
+                              itemBuilder: (context, index) {
+                                final material = _recentMaterials[index];
+                                return _buildMaterialCard(material);
+                              },
+                            );
+                          },
+                        ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildQuickActions() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildQuickActionButton(
+            icon: Icons.add_task_rounded,
+            label: 'Add Task',
+            onTap: () => _navigateToAddActivity(),
+          ),
+          _buildQuickActionButton(
+            icon: Icons.calendar_month_rounded,
+            label: 'Schedule',
+            onTap: () => _navigateToAddSchedule(),
+          ),
+          _buildQuickActionButton(
+            icon: Icons.library_books_rounded,
+            label: 'Material',
+            onTap: () => _navigateToAddMaterial(),
+          ),
+          _buildQuickActionButton(
+            icon: Icons.psychology_rounded,
+            label: 'AI Help',
+            onTap: () => _showAIAssistant(null),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildQuickActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 72,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: AppColors.primary,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
     );
   }
   
-  Widget _buildMaterialCard(StudyMaterial material) {
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 12),
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MaterialDetailScreen(material: material),
-              ),
-            ).then((_) => _loadData());
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      _getCategoryIcon(material.category),
-                      color: Theme.of(context).primaryColor,
-                      size: 22,
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.psychology_alt, 
-                        size: 18, 
-                        color: Colors.blueAccent,
-                      ),
-                      constraints: const BoxConstraints(),
-                      padding: EdgeInsets.zero,
-                      onPressed: () => _showAIAssistant(material),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  material.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                if (material.description != null) ...[
-                  Text(
-                    material.description!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                ],
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withAlpha(25),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    material.category,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildMaterialListItem(StudyMaterial material) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        leading: Container(
+  Widget _buildSectionHeader(
+    String title,
+    String subtitle,
+    IconData icon, {
+    Widget? action,
+  }) {
+    return Row(
+      children: [
+        Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withAlpha(30),
+            color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
-            _getCategoryIcon(material.category),
-            color: Theme.of(context).primaryColor,
-            size: 26,
+            icon,
+            color: AppColors.primary,
+            size: 20,
           ),
         ),
-        title: Text(
-          material.title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
           ),
         ),
-        subtitle: material.description != null 
-            ? Text(
-                material.description!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              )
-            : null,
-        trailing: IconButton(
-          icon: const Icon(Icons.psychology_alt, color: Colors.blueAccent),
-          tooltip: 'AI Assist',
-          onPressed: () => _showAIAssistant(material),
-        ),
+        if (action != null) action,
+      ],
+    );
+  }
+  
+  Widget _buildMaterialCard(StudyMaterial material) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => MaterialDetailScreen(material: material),
           ),
         ).then((_) => _loadData()),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      _getCategoryIcon(material.category),
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.psychology_alt_rounded,
+                      color: Colors.blue,
+                      size: 20,
+                    ),
+                    onPressed: () => _showAIAssistant(material),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                material.title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  material.category,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1085,5 +1100,173 @@ class _HomeScreenState extends State<HomeScreen> {
       default:
         return Icons.folder;
     }
+  }
+
+  Widget _buildCompletedActivityCard(Activity activity) {
+    final Color scheduleColor = activity.scheduleColorValue ?? AppColors.primary;
+    
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color: scheduleColor,
+                  size: 16,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'Completed',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheduleColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              activity.title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${activity.formattedStartTime} - ${activity.formattedEndTime}',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: scheduleColor.withAlpha(25),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                activity.scheduleTitle ?? 'Activity',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: scheduleColor,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMaterialListItem(StudyMaterial material) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MaterialDetailScreen(material: material),
+          ),
+        ).then((_) => _loadData()),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _getCategoryIcon(material.category),
+                  color: AppColors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      material.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (material.description != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        material.description!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        material.category,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.psychology_alt_rounded,
+                  color: Colors.blue,
+                ),
+                onPressed: () => _showAIAssistant(material),
+                tooltip: 'AI Assistant',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

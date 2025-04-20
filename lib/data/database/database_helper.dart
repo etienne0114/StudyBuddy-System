@@ -19,6 +19,14 @@ class DatabaseHelper {
     return _database!;
   }
 
+  // Add method to recreate database
+  Future<void> recreateDatabase() async {
+    String path = join(await getDatabasesPath(), 'study_scheduler.db');
+    await deleteDatabase(path);
+    _database = null;
+    await database;
+  }
+
   DatabaseHelper._internal();
 
   Future<Database> _initDatabase() async {
@@ -66,14 +74,14 @@ class DatabaseHelper {
 
     // Create study materials table
     await db.execute('''
-      CREATE TABLE study_materials(
+      CREATE TABLE IF NOT EXISTS study_materials (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         description TEXT,
         category TEXT NOT NULL,
         filePath TEXT,
+        url TEXT,
         fileType TEXT,
-        fileUrl TEXT,
         isOnline INTEGER DEFAULT 0,
         createdAt TEXT NOT NULL,
         updatedAt TEXT NOT NULL
@@ -82,13 +90,13 @@ class DatabaseHelper {
     
     // Create AI usage tracking table
     await db.execute('''
-      CREATE TABLE ai_usage_tracking(
+      CREATE TABLE IF NOT EXISTS ai_usage_tracking (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         materialId INTEGER,
         aiService TEXT NOT NULL,
-        queryText TEXT,
-        usageDate TEXT NOT NULL,
-        FOREIGN KEY (materialId) REFERENCES study_materials (id) ON DELETE CASCADE
+        query TEXT,
+        timestamp TEXT NOT NULL,
+        FOREIGN KEY (materialId) REFERENCES study_materials (id)
       )
     ''');
 
@@ -110,8 +118,8 @@ class DatabaseHelper {
           description TEXT,
           category TEXT NOT NULL,
           filePath TEXT,
+          url TEXT,
           fileType TEXT,
-          fileUrl TEXT,
           isOnline INTEGER DEFAULT 0,
           createdAt TEXT NOT NULL,
           updatedAt TEXT NOT NULL
@@ -267,12 +275,29 @@ class DatabaseHelper {
 
   // Study Materials operations
   Future<int> insertStudyMaterial(StudyMaterial material) async {
-    final Database db = await database;
+    final db = await database;
     return await db.insert('study_materials', material.toMap());
   }
 
+  Future<List<StudyMaterial>> getStudyMaterials() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('study_materials');
+    return List.generate(maps.length, (i) => StudyMaterial.fromMap(maps[i]));
+  }
+
+  Future<StudyMaterial?> getStudyMaterial(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'study_materials',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (maps.isEmpty) return null;
+    return StudyMaterial.fromMap(maps.first);
+  }
+
   Future<int> updateStudyMaterial(StudyMaterial material) async {
-    final Database db = await database;
+    final db = await database;
     return await db.update(
       'study_materials',
       material.toMap(),
@@ -282,7 +307,7 @@ class DatabaseHelper {
   }
 
   Future<int> deleteStudyMaterial(int id) async {
-    final Database db = await database;
+    final db = await database;
     return await db.delete(
       'study_materials',
       where: 'id = ?',
@@ -290,28 +315,8 @@ class DatabaseHelper {
     );
   }
 
-  Future<List<StudyMaterial>> getStudyMaterials() async {
-    final Database db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('study_materials');
-    return List.generate(maps.length, (i) => StudyMaterial.fromMap(maps[i]));
-  }
-
-  Future<StudyMaterial?> getStudyMaterial(int id) async {
-    final Database db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'study_materials',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-
-    if (maps.isNotEmpty) {
-      return StudyMaterial.fromMap(maps.first);
-    }
-    return null;
-  }
-  
   Future<List<StudyMaterial>> getStudyMaterialsByCategory(String category) async {
-    final Database db = await database;
+    final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'study_materials',
       where: 'category = ?',
