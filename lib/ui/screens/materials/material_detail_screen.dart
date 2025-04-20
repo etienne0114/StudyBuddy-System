@@ -5,8 +5,6 @@ import 'package:study_scheduler/data/models/study_material.dart';
 import 'package:study_scheduler/helpers/ai_helper.dart';
 import 'package:study_scheduler/ui/screens/materials/add_material_screen.dart';
 import 'package:study_scheduler/data/repositories/study_materials_repository.dart';
-import 'package:study_scheduler/ui/screens/materials/ai_assistant_screen.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class MaterialDetailScreen extends StatefulWidget {
   final StudyMaterial material;
@@ -23,7 +21,6 @@ class MaterialDetailScreen extends StatefulWidget {
 class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
   final StudyMaterialsRepository _repository = StudyMaterialsRepository();
   late StudyMaterial _material;
-  bool _isLoading = false;
   
   @override
   void initState() {
@@ -37,61 +34,52 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
       appBar: AppBar(
         title: const Text('Material Details'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.auto_awesome),
-            tooltip: 'AI Assistant',
-            onPressed: _showAIAssistant,
-          ),
+          AIHelper.createAppBarAction(context, material: _material),
           IconButton(
             icon: const Icon(Icons.edit),
-            tooltip: 'Edit Material',
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => AddMaterialScreen(material: widget.material),
+                  builder: (context) => AddMaterialScreen(material: _material),
                 ),
-              ).then((updated) {
-                if (updated == true) {
-                  Navigator.pop(context, true);
-                }
+              ).then((_) {
+                // Refresh material data
+                _refreshMaterial();
               });
             },
           ),
           IconButton(
             icon: const Icon(Icons.delete),
-            tooltip: 'Delete Material',
-            onPressed: _deleteMaterial,
+            onPressed: () {
+              _showDeleteConfirmationDialog(context);
+            },
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeaderSection(context),
-                  const SizedBox(height: 24),
-                  _buildDescriptionSection(context),
-                  const SizedBox(height: 24),
-                  _buildFileSection(context),
-                  const SizedBox(height: 24),
-                  _buildMetadataSection(context),
-                  const SizedBox(height: 24),
-                  _buildAIActionsSection(context),
-                ],
-              ),
-            ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeaderSection(context),
+            const SizedBox(height: 24),
+            _buildDescriptionSection(context),
+            const SizedBox(height: 24),
+            _buildFileSection(context),
+            const SizedBox(height: 24),
+            _buildMetadataSection(context),
+            const SizedBox(height: 24),
+            _buildAIActionsSection(context),
+          ],
+        ),
+      ),
     );
   }
   
   Future<void> _refreshMaterial() async {
     try {
-      if (_material.id == null) return;
-      
-      final updatedMaterial = await _repository.getMaterialById(_material.id!);
+      final updatedMaterial = await _repository.getMaterialById(_material.id);
       if (updatedMaterial != null && mounted) {
         setState(() {
           _material = updatedMaterial;
@@ -208,7 +196,7 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
 
   Widget _buildFileSection(BuildContext context) {
     if ((_material.filePath == null || _material.filePath!.isEmpty) &&
-        (_material.url == null || _material.url!.isEmpty)) {
+        (_material.fileUrl == null || _material.fileUrl!.isEmpty)) {
       return const SizedBox.shrink();
     }
     
@@ -253,7 +241,18 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                   _material.isOnline ? Icons.open_in_new : Icons.download,
                   color: Theme.of(context).primaryColor,
                 ),
-                onPressed: _openMaterial,
+                onPressed: () {
+                  // Open or download file
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        _material.isOnline
+                            ? 'Opening ${_getFileName()}'
+                            : 'Downloading ${_getFileName()}'
+                      ),
+                    ),
+                  );
+                },
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -491,8 +490,8 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
     if (_material.filePath != null && _material.filePath!.isNotEmpty) {
       return _material.filePath!.split('/').last;
     }
-    if (_material.url != null && _material.url!.isNotEmpty) {
-      return _material.url!.split('/').last;
+    if (_material.fileUrl != null && _material.fileUrl!.isNotEmpty) {
+      return _material.fileUrl!.split('/').last;
     }
     return 'File';
   }
@@ -510,80 +509,45 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
     return number.toString().padLeft(2, '0');
   }
 
-  Future<void> _deleteMaterial() async {
-    final confirmed = await showDialog<bool>(
+  void _showDeleteConfirmationDialog(BuildContext context) {
+    showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Material'),
-        content: const Text('Are you sure you want to delete this material?'),
+        content: Text('Are you sure you want to delete "${_material.title}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
-            ),
+            onPressed: () async {
+              // Delete material and return to previous screen
+              try {
+                await _repository.deleteMaterial(_material.id);
+                if (mounted) {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); // Return to materials list
+                  
+                  // Show success message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Material deleted successfully')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context); // Close dialog
+                  // Show error message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error deleting material: $e')),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
           ),
         ],
-      ),
-    );
-
-    if (confirmed == true) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      try {
-        await _repository.deleteMaterial(_material.id!);
-        if (mounted) {
-          Navigator.pop(context, true);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting material: ${e.toString()}')),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      }
-    }
-  }
-
-  Future<void> _openMaterial() async {
-    try {
-      if (_material.isOnline && _material.url != null) {
-        final url = Uri.parse(_material.url!);
-        if (await canLaunchUrl(url)) {
-          await launchUrl(url);
-        } else {
-          throw 'Could not launch ${_material.url}';
-        }
-      } else if (!_material.isOnline && _material.filePath != null) {
-        // Handle local file opening
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error opening material: ${e.toString()}')),
-        );
-      }
-    }
-  }
-
-  void _showAIAssistant() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AIAssistantScreen(material: _material),
       ),
     );
   }

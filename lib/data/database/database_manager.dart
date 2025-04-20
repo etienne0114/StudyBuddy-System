@@ -97,8 +97,8 @@ class DatabaseManager {
           description TEXT,
           category TEXT NOT NULL,
           filePath TEXT,
-          url TEXT,
           fileType TEXT,
+          fileUrl TEXT,
           isOnline INTEGER DEFAULT 0,
           createdAt TEXT NOT NULL,
           updatedAt TEXT NOT NULL
@@ -143,8 +143,8 @@ class DatabaseManager {
               description TEXT,
               category TEXT NOT NULL,
               filePath TEXT,
-              url TEXT,
               fileType TEXT,
+              fileUrl TEXT,
               isOnline INTEGER DEFAULT 0,
               createdAt TEXT NOT NULL,
               updatedAt TEXT NOT NULL
