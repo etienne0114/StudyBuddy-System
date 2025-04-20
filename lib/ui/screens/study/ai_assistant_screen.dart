@@ -10,9 +10,9 @@ class AIAssistantScreen extends StatefulWidget {
   final StudyMaterial material;
 
   const AIAssistantScreen({
-    Key? key,
+    super.key,
     required this.material,
-  }) : super(key: key);
+  });
 
   @override
   State<AIAssistantScreen> createState() => _AIAssistantScreenState();
@@ -172,7 +172,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
               const SizedBox(height: 8),
               Text(
                 widget.material.description!,
-                style: AppStyles.bodyText,
+                style: AppStyles.body1, // Replace with an existing style or define 'bodyText' in AppStyles
               ),
             ],
             const SizedBox(height: 8),
@@ -290,12 +290,12 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
       child: _response.isNotEmpty
           ? Text(
               _response,
-              style: AppStyles.bodyText,
+              style: AppStyles.body1, // Replace with an existing style or define 'bodyText' in AppStyles
             )
           : Center(
               child: Text(
                 'Ask a question or use one of the quick actions above',
-                style: AppStyles.bodyText.copyWith(
+                style: AppStyles.body1.copyWith(
                   color: Colors.grey,
                 ),
               ),

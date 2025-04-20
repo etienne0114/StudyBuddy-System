@@ -9,9 +9,9 @@ class AIAssistantDialog extends StatefulWidget {
   final StudyMaterial? material;
 
   const AIAssistantDialog({
-    Key? key,
+    super.key,
     this.material,
-  }) : super(key: key);
+  });
 
   @override
   State<AIAssistantDialog> createState() => _AIAssistantDialogState();

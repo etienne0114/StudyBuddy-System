@@ -7,7 +7,7 @@ import 'package:study_scheduler/constants/app_constants.dart';
 import 'package:study_scheduler/ui/screens/home/home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({Key? key}) : super(key: key);
+  const OnboardingScreen({super.key});
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();

@@ -2,7 +2,6 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:study_scheduler/app.dart';
 import 'package:study_scheduler/data/database/database_helper.dart';
@@ -11,77 +10,41 @@ import 'package:study_scheduler/data/repositories/study_materials_repository.dar
 import 'package:study_scheduler/services/auth_service.dart';
 import 'package:study_scheduler/services/notification_service.dart';
 import 'package:study_scheduler/managers/ai_assistant_manager.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:study_scheduler/services/ai_service.dart';
 import 'package:study_scheduler/ui/screens/home/home_screen.dart';
 import 'package:study_scheduler/constants/app_theme.dart';
+import 'package:study_scheduler/utils/logger.dart';
 
 void main() async {
-  // Ensure Flutter is initialized
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Set preferred orientations
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  
-  // Set system UI overlay style
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
-  
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
-  
-  // Initialize AI functionality
   try {
-    // Initialize AI tables
-    final studyMaterialsRepository = StudyMaterialsRepository();
-    await studyMaterialsRepository.ensureAITablesExist();
-    
-    // Initialize AI Assistant Manager
-    await AIAssistantManager.instance.initialize();
-    
-    // Initialize AI service
-    await AIService().initialize();
-    
-    if (kDebugMode) {
-      print('AI functionality initialized successfully');
-    }
+    // Ensure Flutter bindings are initialized
+    WidgetsFlutterBinding.ensureInitialized();
+
+    // Load environment variables
+    await dotenv.load(fileName: '.env');
+
+    // Initialize services
+    final notificationService = NotificationService();
+    await notificationService.initialize();
+
+    // Run the app
+    runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AIAssistantManager()),
+        ],
+        child: const StudySchedulerApp(),
+      ),
+    );
   } catch (e) {
-    // Silently handle errors to prevent app crashes
-    if (kDebugMode) {
-      print('Error initializing AI functionality (handled): $e');
-    }
-    // App will continue normally even if AI initialization fails
+    Logger.error('Failed to initialize app: $e');
+    rethrow;
   }
-  
-  // Initialize services
-  final notificationService = NotificationService();
-  await notificationService.init();
-  await notificationService.requestPermissions();
-  
-  // Initialize database
-  final dbHelper = DatabaseHelper.instance;
-  await dbHelper.database;
-  
-  // Start the app
-  runApp(MyApp(
-    notificationService: notificationService,
-    dbHelper: dbHelper,
-  ));
 }
 
 // Widget to handle initialization and show loading state
 class AppLoader extends StatefulWidget {
-  const AppLoader({Key? key}) : super(key: key);
+  const AppLoader({super.key});
 
   @override
   State<AppLoader> createState() => _AppLoaderState();
@@ -168,10 +131,10 @@ class MyApp extends StatelessWidget {
   final DatabaseHelper dbHelper;
 
   const MyApp({
-    Key? key,
+    super.key,
     required this.notificationService,
     required this.dbHelper,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

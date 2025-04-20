@@ -12,9 +12,9 @@ class AddScheduleScreen extends StatefulWidget {
   final Schedule? schedule; // If provided, we're editing an existing schedule
 
   const AddScheduleScreen({
-    Key? key,
+    super.key,
     this.schedule,
-  }) : super(key: key);
+  });
 
   @override
   State<AddScheduleScreen> createState() => _AddScheduleScreenState();

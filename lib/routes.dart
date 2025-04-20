@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:study_scheduler/ui/screens/auth/login_screen.dart';
-import 'package:study_scheduler/ui/screens/home/home_screen.dart';
-// Import other screens as needed
+import 'package:study_scheduler/ui/screens/schedule/schedule_screen.dart';
+import 'package:study_scheduler/ui/screens/schedule/add_activity_screen.dart';
+import 'package:study_scheduler/ui/screens/schedule/ai_schedule_planner_screen.dart';
 
-class AppRoutes {
-  static final routes = <String, WidgetBuilder>{
-    '/login': (context) => const LoginScreen(),
-    '/home': (context) => const HomeScreen(),
-    // Add more routes as needed
-  };
-}
+final Map<String, WidgetBuilder> appRoutes = {
+  '/': (context) => const ScheduleScreen(),
+  '/add-activity': (context) => const AddActivityScreen(),
+  '/ai-planner': (context) => const AISchedulePlannerScreen(),
+};

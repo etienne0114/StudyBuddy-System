@@ -13,9 +13,9 @@ class ScheduleDetailScreen extends StatefulWidget {
   final Schedule schedule;
 
   const ScheduleDetailScreen({
-    Key? key,
+    super.key,
     required this.schedule,
-  }) : super(key: key);
+  });
 
   @override
   State<ScheduleDetailScreen> createState() => _ScheduleDetailScreenState();
@@ -26,34 +26,21 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
   bool _isLoading = false;
   List<Activity> _activities = [];
   List<int> _activitiesByDay = List.filled(7, 0); // Activity count for each day
-  late Schedule _currentSchedule;
   
   @override
   void initState() {
     super.initState();
-    _currentSchedule = widget.schedule;
     _tabController = TabController(length: 7, vsync: this);
     
     // Default to current day
-    final currentDayIndex = DateTime.now().weekday - 1; // 0-6 for Monday-Saturday
+    final currentDayIndex = DateTime.now().weekday - 1; // 0-6 for Sunday-Saturday
     _tabController.index = currentDayIndex;
     
     _loadActivities();
-    
-    // Listen for tab changes to update the view
-    _tabController.addListener(_onTabChanged);
-  }
-  
-  void _onTabChanged() {
-    if (_tabController.indexIsChanging) {
-      // Tab has changed, reload activities for the new day
-      _loadActivities();
-    }
   }
   
   @override
   void dispose() {
-    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -66,16 +53,8 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
     try {
       final repository = Provider.of<ScheduleRepository>(context, listen: false);
       
-      // Refresh the schedule data first to ensure we have the latest
-      if (_currentSchedule.id != null) {
-        final updatedSchedule = await repository.getScheduleById(_currentSchedule.id!);
-        if (updatedSchedule != null) {
-          _currentSchedule = updatedSchedule;
-        }
-      }
-      
       // Get activities for this schedule
-      final activities = await repository.getActivitiesByScheduleId(_currentSchedule.id!);
+      final activities = await repository.getActivitiesByScheduleId(widget.schedule.id!);
       
       // Count activities per day
       final activitiesByDay = List.filled(7, 0);
@@ -86,13 +65,11 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
         }
       }
       
-      if (mounted) {
-        setState(() {
-          _activities = activities;
-          _activitiesByDay = activitiesByDay;
-          _isLoading = false;
-        });
-      }
+      setState(() {
+        _activities = activities;
+        _activitiesByDay = activitiesByDay;
+        _isLoading = false;
+      });
     } catch (e) {
       print('Error loading activities: $e');
       
@@ -110,11 +87,11 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
   
   @override
   Widget build(BuildContext context) {
-    final Color scheduleColor = Color(_currentSchedule.color);
+    final Color scheduleColor = Color(widget.schedule.color);
     
     return Scaffold(
       appBar: AppBar(
-        title: Text(_currentSchedule.title),
+        title: Text(widget.schedule.title),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -149,7 +126,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
             ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: scheduleColor,
-        onPressed: () => _navigateToAddActivity(_currentSchedule),
+        onPressed: () => _navigateToAddActivity(widget.schedule),
         child: const Icon(Icons.add),
       ),
     );
@@ -230,8 +207,8 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
                 final activity = dayActivities[index];
                 
                 // Add schedule info to the activity for display
-                activity.scheduleTitle = _currentSchedule.title;
-                activity.scheduleColor = _currentSchedule.color;
+                activity.scheduleTitle = widget.schedule.title;
+                activity.scheduleColor = widget.schedule.color;
                 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12.0),
@@ -273,11 +250,11 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () => _navigateToAddActivity(_currentSchedule),
+            onPressed: () => _navigateToAddActivity(widget.schedule),
             icon: const Icon(Icons.add),
             label: const Text('Add Activity'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(_currentSchedule.color),
+              backgroundColor: Color(widget.schedule.color),
             ),
           ),
         ],
@@ -333,7 +310,7 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      activity.formattedDuration ?? "Duration unknown",
+                      activity.formattedDuration,
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -439,14 +416,12 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
       context,
       MaterialPageRoute(
         builder: (context) => AddScheduleScreen(
-          schedule: _currentSchedule,
+          schedule: widget.schedule,
         ),
       ),
-    ).then((result) {
+    ).then((_) {
       // Refresh schedule and activities after editing
-      if (result == true) {
-        _loadActivities();
-      }
+      _loadActivities();
     });
   }
   
@@ -454,29 +429,42 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
     // Get the current selected day
     final dayOfWeek = _tabController.index + 1; // Convert 0-6 to 1-7
     
+    // Create a default time (current time rounded to nearest half hour)
+    final now = TimeOfDay.now();
+    final roundedMinute = (now.minute / 30).round() * 30;
+    final startTime = TimeOfDay(
+      hour: now.hour + (roundedMinute == 60 ? 1 : 0),
+      minute: roundedMinute % 60,
+    );
+    final endTime = TimeOfDay(
+      hour: (startTime.hour + 1) % 24,
+      minute: startTime.minute,
+    );
+    
+    // Create a template activity
+    final newActivity = Activity(
+      scheduleId: schedule.id!,
+      title: '',
+      dayOfWeek: dayOfWeek,
+      startTime: '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}',
+      endTime: '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}',
+      notifyBefore: 30,
+      isRecurring: 1,
+      createdAt: DateTime.now().toIso8601String(),
+      updatedAt: DateTime.now().toIso8601String(),
+    );
+    
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddActivityScreen(
           schedule: schedule,
-          activity: Activity(
-            scheduleId: schedule.id!,
-            title: '',
-            dayOfWeek: dayOfWeek,
-            startTime: '${TimeOfDay.now().hour.toString().padLeft(2, '0')}:${TimeOfDay.now().minute.toString().padLeft(2, '0')}',
-            endTime: '${(TimeOfDay.now().hour + 1).toString().padLeft(2, '0')}:${TimeOfDay.now().minute.toString().padLeft(2, '0')}',
-            notifyBefore: 30,
-            isRecurring: 1,
-            createdAt: DateTime.now().toIso8601String(),
-            updatedAt: DateTime.now().toIso8601String(),
-          ),
+          activity: newActivity,
         ),
       ),
-    ).then((result) {
-      // Refresh activities after adding/updating
-      if (result == true) {
-        _loadActivities();
-      }
+    ).then((_) {
+      // Refresh activities after adding new one
+      _loadActivities();
     });
   }
   
@@ -485,15 +473,13 @@ class _ScheduleDetailScreenState extends State<ScheduleDetailScreen> with Single
       context,
       MaterialPageRoute(
         builder: (context) => AddActivityScreen(
-          schedule: _currentSchedule,
+          schedule: widget.schedule,
           activity: activity,
         ),
       ),
-    ).then((result) {
+    ).then((_) {
       // Refresh activities after editing
-      if (result == true) {
-        _loadActivities();
-      }
+      _loadActivities();
     });
   }
 }

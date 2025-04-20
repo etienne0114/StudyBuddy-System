@@ -42,12 +42,12 @@ dependencies:
 
   # File handling
   path_provider: ^2.1.1
-  file_picker: ^5.5.0
+  file_picker: ^10.1.2
   open_file: ^3.3.2
   url_launcher: ^6.2.5
   
   # Notifications
-  flutter_local_notifications: ^16.3.2
+  flutter_local_notifications: 19.1.0
   http: ^1.1.0
 
 dev_dependencies:

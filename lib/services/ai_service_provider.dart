@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:study_scheduler/data/models/ai_service.dart';
 import 'package:study_scheduler/data/models/study_material.dart';
 import 'package:study_scheduler/utils/logger.dart';

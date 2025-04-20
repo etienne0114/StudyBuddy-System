@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:study_scheduler/constants/app_colors.dart';
 import 'package:study_scheduler/constants/app_styles.dart';
-import 'package:study_scheduler/data/models/activity.dart';
 import 'package:study_scheduler/data/models/schedule.dart';
 import 'package:study_scheduler/data/models/study_material.dart';
 import 'package:study_scheduler/data/repositories/study_materials_repository.dart';
@@ -12,9 +11,9 @@ class AISchedulePlannerScreen extends StatefulWidget {
   final Schedule schedule;
 
   const AISchedulePlannerScreen({
-    Key? key,
+    super.key,
     required this.schedule,
-  }) : super(key: key);
+  });
 
   @override
   State<AISchedulePlannerScreen> createState() => _AISchedulePlannerScreenState();
@@ -26,7 +25,7 @@ class _AISchedulePlannerScreenState extends State<AISchedulePlannerScreen> {
   
   bool _isLoading = false;
   String _response = '';
-  List<StudyMaterial> _selectedMaterials = [];
+  final List<StudyMaterial> _selectedMaterials = [];
   List<StudyMaterial> _availableMaterials = [];
   
   @override
@@ -155,7 +154,7 @@ ${_selectedMaterials.map((m) => '- ${m.title} (${m.category})').join('\n')}
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Select Study Materials',
               style: AppStyles.heading3,
             ),
@@ -221,12 +220,14 @@ ${_selectedMaterials.map((m) => '- ${m.title} (${m.category})').join('\n')}
           : _response.isNotEmpty
               ? Text(
                   _response,
-                  style: AppStyles.bodyText,
+                  style: TextStyle(
+                    color: AppColors.primary, // Replace 'primary' with the appropriate color from AppColors
+                  ),
                 )
               : Center(
                   child: Text(
                     'Select materials and use one of the actions above to generate or optimize your schedule',
-                    style: AppStyles.bodyText.copyWith(
+                    style: TextStyle(
                       color: Colors.grey,
                     ),
                     textAlign: TextAlign.center,

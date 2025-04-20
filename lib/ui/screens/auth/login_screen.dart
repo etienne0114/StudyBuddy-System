@@ -11,7 +11,7 @@ import 'package:study_scheduler/constants/app_colors.dart';
 import 'package:study_scheduler/utils/validators.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();

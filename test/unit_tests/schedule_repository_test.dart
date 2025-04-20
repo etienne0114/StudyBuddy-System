@@ -34,8 +34,8 @@ void main() {
       title: 'Test Schedule',
       description: 'Test Description',
       color: Colors.blue.value,
-      createdAt: DateTime.now().toIso8601String(),
-      updatedAt: DateTime.now().toIso8601String(),
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
 
     final testSchedules = [
@@ -45,8 +45,8 @@ void main() {
         title: 'Test Schedule 2',
         description: 'Test Description 2',
         color: Colors.red.value,
-        createdAt: DateTime.now().toIso8601String(),
-        updatedAt: DateTime.now().toIso8601String(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       ),
     ];
 

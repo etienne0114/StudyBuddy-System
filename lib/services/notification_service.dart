@@ -1,6 +1,5 @@
 // lib/services/notification_service.dart
 
-import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
@@ -16,9 +15,7 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
   
-  factory NotificationService() {
-    return _instance;
-  }
+  factory NotificationService() => _instance;
   
   NotificationService._internal() {
     tz.initializeTimeZones();
@@ -30,27 +27,27 @@ class NotificationService {
     
     try {
       const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-      final iosSettings = DarwinInitializationSettings(
+      const iosSettings = DarwinInitializationSettings(
         requestAlertPermission: true,
         requestBadgePermission: true,
         requestSoundPermission: true,
-        onDidReceiveLocalNotification: (int id, String? title, String? body, String? payload) {
-          _onDidReceiveLocalNotification(id, title, body, payload);
-        },
       );
       
-      final initSettings = InitializationSettings(
+      const initSettings = InitializationSettings(
         android: androidSettings,
         iOS: iosSettings,
       );
       
       await _notifications.initialize(
         initSettings,
-        onDidReceiveNotificationResponse: _onNotificationTapped,
+        onDidReceiveNotificationResponse: (NotificationResponse response) {
+          // Handle notification tap
+          Logger.info('Notification tapped: ${response.payload}');
+        },
       );
       
       // Create notification channel for Android
-      final androidChannel = AndroidNotificationChannel(
+      const androidChannel = AndroidNotificationChannel(
         AppConstants.notificationChannelId,
         AppConstants.notificationChannelName,
         description: AppConstants.notificationChannelDescription,
@@ -63,6 +60,14 @@ class NotificationService {
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(androidChannel);
       
+      // Request permissions for iOS
+      await _notifications.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>()?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      
       _isInitialized = true;
       Logger.info('Notification service initialized successfully');
       return true;
@@ -72,10 +77,6 @@ class NotificationService {
     }
   }
   
-  void _onNotificationTapped(NotificationResponse response) {
-    // Handle notification tap
-    Logger.info('Notification tapped: ${response.payload}');
-  }
   
   void _onDidReceiveLocalNotification(int id, String? title, String? body, String? payload) {
     // Handle iOS notification when app is in foreground
@@ -86,7 +87,7 @@ class NotificationService {
   Future<bool> requestPermissions() async {
     try {
       // Request permissions for iOS
-      final iOS = await _notifications.resolvePlatformSpecificImplementation<
+      final iOS = _notifications.resolvePlatformSpecificImplementation<
           IOSFlutterLocalNotificationsPlugin>();
       if (iOS != null) {
         await iOS.requestPermissions(
@@ -97,11 +98,11 @@ class NotificationService {
       }
       
       // Request permissions for Android 13 and above
-      final android = await _notifications.resolvePlatformSpecificImplementation<
+      final android = _notifications.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       if (android != null) {
         // For Android, we create the notification channel which implicitly requests permissions
-        final androidChannel = AndroidNotificationChannel(
+        const androidChannel = AndroidNotificationChannel(
           AppConstants.notificationChannelId,
           AppConstants.notificationChannelName,
           description: AppConstants.notificationChannelDescription,
@@ -161,19 +162,19 @@ class NotificationService {
         scheduledDate = scheduledDate.add(const Duration(days: 7));
       }
       
-      final androidDetails = AndroidNotificationDetails(
+      const androidDetails = AndroidNotificationDetails(
         AppConstants.notificationChannelId,
         AppConstants.notificationChannelName,
         channelDescription: AppConstants.notificationChannelDescription,
         importance: Importance.high,
         priority: Priority.high,
-        styleInformation: const BigTextStyleInformation(''),
+        styleInformation: BigTextStyleInformation(''),
         enableVibration: true,
         playSound: true,
         category: AndroidNotificationCategory.reminder,
       );
       
-      final iosDetails = const DarwinNotificationDetails(
+      const iosDetails = DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
@@ -187,7 +188,7 @@ class NotificationService {
         iOS: iosDetails,
       );
       
-      final String timeString = '${activity.startTime.substring(0, 5)}';
+      final String timeString = activity.startTime.substring(0, 5);
       final String notifyString = activity.notifyBefore >= 60
           ? '${activity.notifyBefore ~/ 60} hour(s)'
           : '${activity.notifyBefore} minutes';
@@ -198,9 +199,7 @@ class NotificationService {
         'Your activity starts at $timeString (in $notifyString)',
         tz.TZDateTime.from(notificationTime, tz.local),
         details,
-        androidAllowWhileIdle: true,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: activity.isRecurringFlag
             ? DateTimeComponents.dayOfWeekAndTime
             : null,
@@ -240,5 +239,24 @@ class NotificationService {
       Logger.error('Failed to get pending notifications: $e');
       return [];
     }
+  }
+
+  Future<void> initialize() async {
+    final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+        FlutterLocalNotificationsPlugin();
+
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+    );
+
+    await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        // Handle notification tap
+      },
+    );
   }
 }

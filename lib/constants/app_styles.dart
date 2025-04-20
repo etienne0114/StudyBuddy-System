@@ -44,80 +44,66 @@ class AppStyles {
     fontStyle: FontStyle.italic,
   );
   
-  static const TextStyle button = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.bold,
-    color: Colors.white,
+  // Button Styles
+  static final ButtonStyle primaryButton = ElevatedButton.styleFrom(
+    backgroundColor: AppColors.primary,
+    foregroundColor: Colors.white,
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+  );
+  
+  static final ButtonStyle secondaryButton = ElevatedButton.styleFrom(
+    backgroundColor: AppColors.secondary,
+    foregroundColor: Colors.white,
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+  );
+  
+  static final ButtonStyle outlineButton = OutlinedButton.styleFrom(
+    foregroundColor: AppColors.primary,
+    side: const BorderSide(color: AppColors.primary),
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
   );
   
   // Card Styles
-  static BoxDecoration cardDecoration = BoxDecoration(
-    color: Colors.white,
+  static final BoxDecoration cardDecoration = BoxDecoration(
+    color: AppColors.surface,
     borderRadius: BorderRadius.circular(12),
     boxShadow: [
       BoxShadow(
-        color: _createColorWithOpacity(Colors.grey, 0.1),
-        spreadRadius: 1,
-        blurRadius: 4,
+        color: Colors.black.withOpacity(0.1),
+        blurRadius: 8,
         offset: const Offset(0, 2),
       ),
     ],
   );
   
-  // Button Styles
-  static ButtonStyle primaryButtonStyle = ElevatedButton.styleFrom(
-    backgroundColor: AppColors.primary,
-    foregroundColor: Colors.white,
-    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-    ),
-    elevation: 2,
-  );
-  
-  static ButtonStyle secondaryButtonStyle = ElevatedButton.styleFrom(
-    backgroundColor: Colors.white,
-    foregroundColor: AppColors.primary,
-    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-      side: const BorderSide(color: AppColors.primary),
-    ),
-    elevation: 0,
-  );
-  
-  static ButtonStyle dangerButtonStyle = ElevatedButton.styleFrom(
-    backgroundColor: Colors.red,
-    foregroundColor: Colors.white,
-    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-    ),
-    elevation: 2,
-  );
-  
-  // Input Decoration
-  static InputDecoration inputDecoration = InputDecoration(
-    filled: true,
-    fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+  // Input Styles
+  static final InputDecoration inputDecoration = InputDecoration(
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide(color: Colors.grey[300]!),
+      borderSide: const BorderSide(color: AppColors.textHint),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide(color: Colors.grey[300]!),
+      borderSide: const BorderSide(color: AppColors.textHint),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
-      borderSide: const BorderSide(color: AppColors.primary, width: 2),
+      borderSide: const BorderSide(color: AppColors.primary),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
       borderSide: const BorderSide(color: AppColors.error),
     ),
-    labelStyle: TextStyle(color: Colors.grey[700]),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
   );
   
   // Avatar Style
@@ -158,6 +144,8 @@ class AppStyles {
       ),
     ),
   );
+
+  static var body1;
   
   // Helper method to create a color with opacity
   // This works with any Flutter version and avoids deprecated methods

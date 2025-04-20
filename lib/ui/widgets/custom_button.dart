@@ -16,7 +16,7 @@ class CustomButton extends StatelessWidget {
   final IconData? icon;
 
   const CustomButton({
-    Key? key,
+    super.key,
     required this.text,
     this.onPressed,
     this.isLoading = false,
@@ -27,7 +27,7 @@ class CustomButton extends StatelessWidget {
     this.borderRadius = 8.0,
     this.padding = const EdgeInsets.symmetric(horizontal: 24.0),
     this.icon,
-  }) : super(key: key);
+  });
 
   // Constructor with label for backward compatibility
   const CustomButton.withLabel({

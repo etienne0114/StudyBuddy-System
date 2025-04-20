@@ -2,39 +2,50 @@
 
 import 'package:flutter/material.dart';
 
+/// Application color palette for consistent UI
 class AppColors {
-  // Primary color and variants
-  static const Color primary = Color(0xFF3F51B5); // Indigo
-  static const Color primaryLight = Color(0xFFC5CAE9);
-  static const Color primaryDark = Color(0xFF303F9F);
-  static const Color accent = Color(0xFFFF4081); // Pink A200
-
-  // Background colors
-  static const Color backgroundLight = Color(0xFFF5F5F5);
-  static const Color backgroundDark = Color(0xFF121212);
-  static const Color cardBackground = Colors.white;
-
+  // Primary colors
+  static const Color primary = Color(0xFF6200EE);
+  static const Color primaryVariant = Color(0xFF3700B3);
+  static const Color secondary = Color(0xFF03DAC6);
+  static const Color secondaryVariant = Color(0xFF018786);
+  
+  // Secondary colors
+  static const Color secondaryLight = Color(0xFF5EBBB7);
+  static const Color secondaryDark = Color(0xFF006B5B);
+  
+  // Accent colors
+  static const Color accent = Color(0xFFFFC107);
+  static const Color accentLight = Color(0xFFFFF350);
+  static const Color accentDark = Color(0xFFC79100);
+  
   // Text colors
-  static const Color textPrimary = Color(0xFF212121);
-  static const Color textSecondary = Color(0xFF757575);
-  static const Color textLight = Colors.white;
-
+  static const Color textPrimary = Color(0xFF000000);
+  static const Color textSecondary = Color(0xFF666666);
+  static const Color textHint = Color(0xFF999999);
+  
+  // Background colors
+  static const Color background = Color(0xFFFFFFFF);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color error = Color(0xFFB00020);
+  
   // Status colors
   static const Color success = Color(0xFF4CAF50);
   static const Color warning = Color(0xFFFFC107);
-  static const Color error = Color(0xFFF44336);
   static const Color info = Color(0xFF2196F3);
-
-  // Schedule type colors
+  
+  // Schedule colors
   static const List<Color> scheduleColors = [
-    Color(0xFF3F51B5), // Indigo
-    Color(0xFFE91E63), // Pink
+    Color(0xFF6200EE), // Purple
+    Color(0xFF03DAC6), // Teal
+    Color(0xFF018786), // Dark Teal
+    Color(0xFFB00020), // Red
     Color(0xFF4CAF50), // Green
-    Color(0xFFFF9800), // Orange
-    Color(0xFF9C27B0), // Purple
+    Color(0xFFFFC107), // Amber
+    Color(0xFF2196F3), // Blue
+    Color(0xFF9C27B0), // Deep Purple
+    Color(0xFFFF5722), // Deep Orange
     Color(0xFF795548), // Brown
-    Color(0xFF009688), // Teal
-    Color(0xFF607D8B), // Blue Grey
   ];
 
   // Get a schedule color by index with wrapping
@@ -96,6 +107,6 @@ class AppColors {
   
   // Choose a contrasting text color (black or white) based on background
   static Color getContrastingTextColor(Color backgroundColor) {
-    return isLightColor(backgroundColor) ? textPrimary : textLight;
+    return isLightColor(backgroundColor) ? textPrimary : Colors.white;
   }
 }
